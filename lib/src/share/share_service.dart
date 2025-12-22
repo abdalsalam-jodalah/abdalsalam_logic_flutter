@@ -7,3 +7,4 @@ abstract class ShareService extends ServiceInterface {
   Future<void> shareMultipleFiles(List<String> filePaths, {String? text});
 }
 
+

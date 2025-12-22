@@ -10,3 +10,4 @@ abstract class RoleManager extends ServiceInterface {
   Future<bool> hasAllRoles(String userId, List<String> roles);
 }
 
+

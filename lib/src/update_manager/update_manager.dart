@@ -10,3 +10,4 @@ abstract class UpdateManager extends ServiceInterface {
   Stream<double> get downloadProgress;
 }
 
+

@@ -10,3 +10,4 @@ abstract class FcmService extends ServiceInterface {
   Stream<Map<String, dynamic>> get onMessageOpenedApp;
 }
 
+

@@ -10,3 +10,4 @@ abstract class StorageService extends ServiceInterface {
   Future<Map<String, dynamic>> getAll();
 }
 
+

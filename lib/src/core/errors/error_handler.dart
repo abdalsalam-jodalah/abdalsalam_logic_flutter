@@ -7,3 +7,4 @@ abstract class ErrorHandler {
   String getErrorMessage(dynamic error);
 }
 
+
