@@ -14,6 +14,44 @@ import 'models/locale_info.dart';
 import 'models/auth_info.dart';
 import '../logging/logger_service.dart';
 
+/// Implementation of [AppStateManager] with singleton pattern.
+///
+/// This implementation:
+/// - Tracks app lifecycle via [WidgetsBindingObserver]
+/// - Monitors connectivity changes automatically
+/// - Updates device info on orientation/size changes
+/// - Provides reactive streams for all state domains
+/// - Uses singleton pattern to ensure single instance
+///
+/// **Initialization:**
+/// ```dart
+/// final logger = LoggerServiceImpl();
+/// final appStateManager = AppStateManagerImpl.create(logger);
+/// await appStateManager.initialize();
+/// ```
+///
+/// **Usage:**
+/// ```dart
+/// // Listen to state changes
+/// appStateManager.stateStream.listen((state) {
+///   if (state.isOnline && state.isForeground) {
+///     // Sync data
+///   }
+/// });
+///
+/// // Get current device info
+/// final device = appStateManager.deviceInfo;
+/// if (device?.isTablet == true) {
+///   // Use tablet layout
+/// }
+///
+/// // Update authentication
+/// await appStateManager.setAuthenticated(
+///   true,
+///   userId: 'user123',
+///   userEmail: 'user@example.com',
+/// );
+/// ```
 class AppStateManagerImpl implements AppStateManager, WidgetsBindingObserver {
   static AppStateManagerImpl? _instance;
   final LoggerService _logger;
@@ -58,6 +96,14 @@ class AppStateManagerImpl implements AppStateManager, WidgetsBindingObserver {
 
   AppStateManagerImpl._internal(this._logger);
 
+  /// Creates or returns the singleton instance of [AppStateManagerImpl].
+  ///
+  /// [logger] is required for logging state changes and errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final appStateManager = AppStateManagerImpl.create(logger);
+  /// ```
   factory AppStateManagerImpl.create(LoggerService logger) {
     _instance ??= AppStateManagerImpl._internal(logger);
     return _instance!;
@@ -99,6 +145,23 @@ class AppStateManagerImpl implements AppStateManager, WidgetsBindingObserver {
   @override
   Stream<AuthInfo> get authStream => _authController.stream;
 
+  /// Initializes the app state manager.
+  ///
+  /// This method:
+  /// - Registers as a [WidgetsBindingObserver] to track app lifecycle
+  /// - Initializes device information (type, OS, screen metrics)
+  /// - Starts connectivity monitoring
+  /// - Initializes locale information
+  /// - Transitions to [AppLifecycleState.appInit]
+  ///
+  /// Should be called once during app startup, typically in your app's
+  /// initialization sequence.
+  ///
+  /// Example:
+  /// ```dart
+  /// final appStateManager = AppStateManagerImpl.create(logger);
+  /// await appStateManager.initialize();
+  /// ```
   @override
   Future<void> initialize() async {
     if (_isInitialized) {

@@ -1,12 +1,87 @@
 // lib/src/app_state/models/device_info.dart
 import 'package:flutter/material.dart';
 
-enum DeviceType { phone, tablet, desktop, web }
+/// Device type classification.
+enum DeviceType {
+  /// Mobile phone device.
+  phone,
 
-enum DeviceOS { android, ios, windows, macos, linux, web, unknown }
+  /// Tablet device.
+  tablet,
 
-enum ResponsiveBreakpoint { xs, sm, md, lg, xl }
+  /// Desktop computer (Windows, macOS, Linux).
+  desktop,
 
+  /// Web browser.
+  web,
+}
+
+/// Operating system platform.
+enum DeviceOS {
+  /// Android operating system.
+  android,
+
+  /// iOS operating system.
+  ios,
+
+  /// Windows operating system.
+  windows,
+
+  /// macOS operating system.
+  macos,
+
+  /// Linux operating system.
+  linux,
+
+  /// Web platform.
+  web,
+
+  /// Unknown or unsupported platform.
+  unknown,
+}
+
+/// Responsive breakpoint for adaptive UI design.
+///
+/// Breakpoints are based on screen width:
+/// - [xs]: < 576px (phones portrait)
+/// - [sm]: 576-768px (phones landscape, small tablets)
+/// - [md]: 768-992px (tablets portrait)
+/// - [lg]: 992-1200px (tablets landscape)
+/// - [xl]: ≥ 1200px (desktop, large tablets)
+enum ResponsiveBreakpoint {
+  /// Extra small screens (< 576px).
+  xs,
+
+  /// Small screens (576-768px).
+  sm,
+
+  /// Medium screens (768-992px).
+  md,
+
+  /// Large screens (992-1200px).
+  lg,
+
+  /// Extra large screens (≥ 1200px).
+  xl,
+}
+
+/// Comprehensive device information and screen metrics.
+///
+/// Provides detailed information about the device type, operating system,
+/// screen dimensions, orientation, and system UI characteristics. This
+/// information is automatically updated when device metrics change (e.g.,
+/// orientation changes).
+///
+/// Example:
+/// ```dart
+/// final deviceInfo = appStateManager.deviceInfo;
+/// if (deviceInfo != null) {
+///   print('Device: ${deviceInfo.type.name} on ${deviceInfo.os.name}');
+///   print('Screen: ${deviceInfo.screenSize.width}x${deviceInfo.screenSize.height}');
+///   print('Breakpoint: ${deviceInfo.breakpoint.name}');
+///   print('Has notch: ${deviceInfo.hasNotch}');
+/// }
+/// ```
 class DeviceInfo {
   final DeviceType type;
   final DeviceOS os;

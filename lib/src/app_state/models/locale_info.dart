@@ -1,6 +1,18 @@
 // lib/src/app_state/models/locale_info.dart
 import 'package:flutter/material.dart';
 
+/// Locale and text direction information.
+///
+/// Tracks the current application locale, device locale, text direction
+/// (LTR/RTL), and RTL language detection. Automatically detects RTL
+/// languages: Arabic, Hebrew, Persian, Urdu, and Yiddish.
+///
+/// Example:
+/// ```dart
+/// final localeInfo = LocaleInfo.fromLocale(Locale('ar'));
+/// print('Is RTL: ${localeInfo.isRTL}'); // true
+/// print('Text direction: ${localeInfo.textDirection}'); // TextDirection.rtl
+/// ```
 class LocaleInfo {
   final Locale currentLocale;
   final Locale? deviceLocale;

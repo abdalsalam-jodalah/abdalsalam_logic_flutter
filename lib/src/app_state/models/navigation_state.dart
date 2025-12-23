@@ -1,4 +1,28 @@
 // lib/src/app_state/models/navigation_state.dart
+
+/// Navigation state tracking for routes and tabs.
+///
+/// Maintains the current route, route parameters, navigation history,
+/// and tab navigation state. Provides methods for pushing/popping routes
+/// and managing tab navigation.
+///
+/// Example:
+/// ```dart
+/// final navState = NavigationState(
+///   currentRoute: '/home',
+///   routeParams: {},
+///   routeHistory: ['/'],
+///   currentTabIndex: 0,
+///   tabRoutes: {0: '/home'},
+///   timestamp: DateTime.now(),
+/// );
+///
+/// // Push a new route
+/// final updated = navState.pushRoute('/products', params: {'id': '123'});
+///
+/// // Pop the last route
+/// final popped = navState.popRoute();
+/// ```
 class NavigationState {
   final String currentRoute;
   final Map<String, dynamic> routeParams;

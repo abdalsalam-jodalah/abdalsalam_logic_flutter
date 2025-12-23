@@ -1,4 +1,20 @@
 // lib/src/app_state/models/auth_info.dart
+
+/// Authentication state information.
+///
+/// Tracks user authentication status, user ID, email, and authentication
+/// timestamp. Used by [AppStateManager] to maintain authentication state
+/// across the application.
+///
+/// Example:
+/// ```dart
+/// final authInfo = AuthInfo(
+///   isAuthenticated: true,
+///   userId: 'user123',
+///   userEmail: 'user@example.com',
+///   authenticatedAt: DateTime.now(),
+/// );
+/// ```
 class AuthInfo {
   final bool isAuthenticated;
   final String? userId;
