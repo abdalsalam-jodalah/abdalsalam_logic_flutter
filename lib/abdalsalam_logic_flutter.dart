@@ -9,6 +9,11 @@ export 'src/logging/logger_service.dart';
 
 export 'src/app_state/app_state_manager.dart';
 export 'src/app_state/app_state_manager_impl.dart';
+export 'src/app_state/models/app_lifecycle_state.dart';
+export 'src/app_state/models/device_info.dart';
+export 'src/app_state/models/navigation_state.dart';
+export 'src/app_state/models/locale_info.dart';
+export 'src/app_state/models/auth_info.dart';
 
 export 'src/app_initialization/app_initializer.dart';
 export 'src/app_initialization/app_initializer_impl.dart';
