@@ -32,10 +32,7 @@ class LocaleInfo {
     );
   }
 
-  factory LocaleInfo.fromLocale(
-    Locale? locale, {
-    Locale? deviceLocale,
-  }) {
+  factory LocaleInfo.fromLocale(Locale? locale, {Locale? deviceLocale}) {
     final currentLocale = locale ?? const Locale('en');
     final isRTL = _isRTL(currentLocale.languageCode);
     final textDirection = isRTL ? TextDirection.rtl : TextDirection.ltr;
@@ -50,15 +47,7 @@ class LocaleInfo {
   }
 
   static bool _isRTL(String languageCode) {
-    const rtlLanguages = {
-      'ar',
-      'he',
-      'fa',
-      'ur',
-      'yi',
-      'ji',
-      'iw',
-    };
+    const rtlLanguages = {'ar', 'he', 'fa', 'ur', 'yi', 'ji', 'iw'};
     return rtlLanguages.contains(languageCode);
   }
 
@@ -72,4 +61,3 @@ class LocaleInfo {
     };
   }
 }
-

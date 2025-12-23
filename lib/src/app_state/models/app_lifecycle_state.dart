@@ -9,15 +9,9 @@ enum AppLifecycleState {
   appKill,
 }
 
-enum AppFocusState {
-  foreground,
-  background,
-}
+enum AppFocusState { foreground, background }
 
-enum ConnectivityState {
-  online,
-  offline,
-}
+enum ConnectivityState { online, offline }
 
 class AppStateInfo {
   final AppLifecycleState lifecycle;
@@ -60,4 +54,3 @@ class AppStateInfo {
   bool get isForeground => focus == AppFocusState.foreground;
   bool get isBackground => focus == AppFocusState.background;
 }
-

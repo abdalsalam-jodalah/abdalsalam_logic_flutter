@@ -4,7 +4,6 @@ import 'dart:io' show Platform;
 import 'dart:ui' show AppExitResponse;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'app_state_manager.dart';
