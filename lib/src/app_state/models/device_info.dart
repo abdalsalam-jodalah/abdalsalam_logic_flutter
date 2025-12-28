@@ -101,6 +101,7 @@ class DeviceInfo {
   final bool hasPhysicalHomeButton;
   final double statusBarHeight;
   final double navigationBarHeight;
+  final Brightness platformBrightness;
   final DateTime timestamp;
 
   const DeviceInfo({
@@ -122,6 +123,7 @@ class DeviceInfo {
     required this.hasPhysicalHomeButton,
     required this.statusBarHeight,
     required this.navigationBarHeight,
+    required this.platformBrightness,
     required this.timestamp,
   });
 
@@ -144,6 +146,7 @@ class DeviceInfo {
     bool? hasPhysicalHomeButton,
     double? statusBarHeight,
     double? navigationBarHeight,
+    Brightness? platformBrightness,
     DateTime? timestamp,
   }) {
     return DeviceInfo(
@@ -167,6 +170,7 @@ class DeviceInfo {
           hasPhysicalHomeButton ?? this.hasPhysicalHomeButton,
       statusBarHeight: statusBarHeight ?? this.statusBarHeight,
       navigationBarHeight: navigationBarHeight ?? this.navigationBarHeight,
+      platformBrightness: platformBrightness ?? this.platformBrightness,
       timestamp: timestamp ?? this.timestamp,
     );
   }
@@ -176,31 +180,23 @@ class DeviceInfo {
       'type': type.name,
       'os': os.name,
       'osVersion': osVersion,
-      'deviceModel': deviceModel,
-      'deviceManufacturer': deviceManufacturer,
-      'screenSize': {'width': screenSize.width, 'height': screenSize.height},
+      'screenWidth': screenSize.width,
+      'screenHeight': screenSize.height,
       'pixelRatio': pixelRatio,
       'textScaleFactor': textScaleFactor,
       'orientation': orientation.name,
       'breakpoint': breakpoint.name,
+      'currentBreakpoint': currentBreakpoint.name,
       'isLandscapeFirst': isLandscapeFirst,
-      'systemPadding': {
-        'top': systemPadding.top,
-        'right': systemPadding.right,
-        'bottom': systemPadding.bottom,
-        'left': systemPadding.left,
-      },
-      'systemNavigationInsets': {
-        'top': systemNavigationInsets.top,
-        'right': systemNavigationInsets.right,
-        'bottom': systemNavigationInsets.bottom,
-        'left': systemNavigationInsets.left,
-      },
       'hasSystemNavigation': hasSystemNavigation,
       'hasNotch': hasNotch,
       'hasPhysicalHomeButton': hasPhysicalHomeButton,
       'statusBarHeight': statusBarHeight,
       'navigationBarHeight': navigationBarHeight,
+      'platformBrightness': platformBrightness.name,
+      'logicalWidth': logicalWidth,
+      'logicalHeight': logicalHeight,
+      'aspectRatio': aspectRatio,
       'timestamp': timestamp.toIso8601String(),
     };
   }
@@ -209,6 +205,34 @@ class DeviceInfo {
   bool get isTablet => type == DeviceType.tablet;
   bool get isDesktop => type == DeviceType.desktop;
   bool get isWeb => type == DeviceType.web;
+  bool get isMobile => isPhone || isTablet;
+
   bool get isLandscape => orientation == Orientation.landscape;
   bool get isPortrait => orientation == Orientation.portrait;
+
+  double get screenWidth => screenSize.width;
+  double get screenHeight => screenSize.height;
+  double get aspectRatio => screenWidth / screenHeight;
+
+  double get logicalWidth => screenWidth / pixelRatio;
+  double get logicalHeight => screenHeight / pixelRatio;
+
+  bool get isCompactWidth => screenWidth < 600;
+  bool get isMediumWidth => screenWidth >= 600 && screenWidth < 840;
+  bool get isExpandedWidth => screenWidth >= 840;
+
+  bool get isCompactHeight => screenHeight < 480;
+  bool get isMediumHeight => screenHeight >= 480 && screenHeight < 900;
+  bool get isExpandedHeight => screenHeight >= 900;
+
+  ResponsiveBreakpoint get currentBreakpoint {
+    if (screenWidth < 576) return ResponsiveBreakpoint.xs;
+    if (screenWidth < 768) return ResponsiveBreakpoint.sm;
+    if (screenWidth < 992) return ResponsiveBreakpoint.md;
+    if (screenWidth < 1200) return ResponsiveBreakpoint.lg;
+    return ResponsiveBreakpoint.xl;
+  }
+
+  bool get hasNotchOrDynamicIsland => hasNotch || statusBarHeight > 24;
+  bool get isFullScreen => !hasPhysicalHomeButton && hasSystemNavigation;
 }

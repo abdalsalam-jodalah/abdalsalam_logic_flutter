@@ -97,26 +97,13 @@ abstract class AppStateManager implements ServiceInterface {
   /// Emits a new [AuthInfo] whenever authentication state changes.
   Stream<AuthInfo> get authStream;
 
-  /// Updates the application theme mode.
-  ///
-  /// The new theme mode is broadcast via [themeStream].
-  Future<void> updateTheme(ThemeMode mode);
-
-  /// Updates the application locale.
-  ///
-  /// [locale] is the new locale to use. [deviceLocale] is optional and
-  /// represents the device's default locale.
-  ///
-  /// The new locale information is broadcast via [localeStream].
-  Future<void> updateLocale(Locale locale, {Locale? deviceLocale});
-
   /// Updates the navigation state with a new route.
   ///
   /// [route] is the new route path. [params] are optional route parameters.
   ///
   /// The route is added to the navigation history and broadcast via
   /// [navigationStream].
-  Future<void> updateNavigation(String route, {Map<String, dynamic>? params});
+  void updateNavigation(String route, {Map<String, dynamic>? params});
 
   /// Updates the current tab and its associated route.
   ///
@@ -124,30 +111,37 @@ abstract class AppStateManager implements ServiceInterface {
   /// with that tab.
   ///
   /// The navigation state is updated and broadcast via [navigationStream].
-  Future<void> updateTab(int tabIndex, String route);
+  void updateTab(int tabIndex, String route);
 
-  /// Pops the last route from navigation history.
+  /// Updates the application theme mode.
   ///
-  /// The previous route becomes the current route, and the updated state
-  /// is broadcast via [navigationStream].
-  Future<void> popNavigation();
+  /// The new theme mode is broadcast via [themeStream].
+  void updateTheme(ThemeMode mode);
 
-  /// Sets the authentication state.
+  /// Updates the application locale.
   ///
-  /// [authenticated] indicates whether the user is authenticated.
-  /// [userId] and [userEmail] are optional user information.
+  /// [locale] is the new locale to use, or null to use device locale.
+  ///
+  /// The new locale information is broadcast via [localeStream].
+  void updateLocale(Locale? locale);
+
+  /// Sets the authentication state with user information.
+  ///
+  /// [user] is the authenticated user object.
+  /// [accessToken] is the authentication access token.
   ///
   /// The authentication state is updated and broadcast via [authStream].
-  Future<void> setAuthenticated(
-    bool authenticated, {
-    String? userId,
-    String? userEmail,
-  });
+  void setAuthenticated(dynamic user, String accessToken);
 
   /// Clears the authentication state (logs out the user).
   ///
   /// The authentication state is reset and broadcast via [authStream].
-  Future<void> setUnauthenticated();
+  void setUnauthenticated();
+
+  /// Updates the full authentication information.
+  ///
+  /// Allows updating complete [AuthInfo] object for complex auth state changes.
+  void updateAuthInfo(AuthInfo authInfo);
 
   /// Returns a complete snapshot of all application state.
   ///
