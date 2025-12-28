@@ -541,7 +541,7 @@ class _FullStateSection extends StatelessWidget {
     final network = manager.networkInfo;
     buffer.writeln('\n[NETWORK]');
     buffer.writeln('  Online: ${network?.isOnline}');
-    buffer.writeln('  Type: ${network?.connectionType.name}');
+    buffer.writeln('  Type: ${network?.type.name}');
     
     final keyboard = manager.keyboardInfo;
     buffer.writeln('\n[KEYBOARD]');

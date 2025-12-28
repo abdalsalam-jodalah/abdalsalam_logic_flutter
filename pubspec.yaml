@@ -27,9 +27,9 @@ dependencies:
   package_info_plus: ^5.0.1
   device_info_plus: ^9.1.1
   share_plus: ^7.2.1
-  add_2_calendar: ^2.1.0
-  contacts_service: ^0.6.3
-  file_picker: ^6.1.1
+  # add_2_calendar: ^2.1.0
+  # contacts_service: ^0.7.1
+  # file_picker: ^6.1.1
   path: ^1.8.3
   logger: ^2.0.2+1
   equatable: ^2.0.5
