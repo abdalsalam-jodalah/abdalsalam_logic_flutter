@@ -11,6 +11,11 @@ import 'models/device_info.dart' as models;
 import 'models/navigation_state.dart';
 import 'models/locale_info.dart';
 import 'models/auth_info.dart';
+import 'models/keyboard_info.dart';
+import 'models/battery_info.dart';
+import 'models/network_info.dart';
+import 'models/accessibility_info.dart';
+import 'models/memory_info.dart';
 import '../logging/logger_service.dart';
 
 class AppStateManagerImpl
@@ -61,6 +66,16 @@ class AppStateManagerImpl
   ThemeMode _themeMode = ThemeMode.system;
   LocaleInfo _localeInfo = LocaleInfo.fromLocale(null);
   AuthInfo _authInfo = AuthInfo.empty();
+  KeyboardInfo? _keyboardInfo;
+  BatteryInfo? _batteryInfo;
+  NetworkInfo? _networkInfo;
+  AccessibilityInfo? _accessibilityInfo;
+  MemoryInfo _memoryInfo = MemoryInfo(
+    pressureLevel: MemoryPressureLevel.normal,
+    timestamp: DateTime.now(),
+  );
+
+  double _previousKeyboardHeight = 0.0;
 
   final StreamController<lifecycle.AppStateInfo> _stateController =
       StreamController.broadcast();
@@ -73,6 +88,16 @@ class AppStateManagerImpl
   final StreamController<LocaleInfo> _localeController =
       StreamController.broadcast();
   final StreamController<AuthInfo> _authController =
+      StreamController.broadcast();
+  final StreamController<KeyboardInfo> _keyboardController =
+      StreamController.broadcast();
+  final StreamController<BatteryInfo> _batteryController =
+      StreamController.broadcast();
+  final StreamController<NetworkInfo> _networkController =
+      StreamController.broadcast();
+  final StreamController<AccessibilityInfo> _accessibilityController =
+      StreamController.broadcast();
+  final StreamController<MemoryInfo> _memoryController =
       StreamController.broadcast();
 
   @override
@@ -94,7 +119,37 @@ class AppStateManagerImpl
   Stream<AuthInfo> get authStream => _authController.stream;
 
   @override
+  Stream<KeyboardInfo> get keyboardStream => _keyboardController.stream;
+
+  @override
+  Stream<BatteryInfo> get batteryStream => _batteryController.stream;
+
+  @override
+  Stream<NetworkInfo> get networkStream => _networkController.stream;
+
+  @override
+  Stream<AccessibilityInfo> get accessibilityStream =>
+      _accessibilityController.stream;
+
+  @override
+  Stream<MemoryInfo> get memoryStream => _memoryController.stream;
+
+  @override
   lifecycle.AppStateInfo get currentState => _currentState;
+  @override
+  KeyboardInfo? get keyboardInfo => _keyboardInfo;
+
+  @override
+  BatteryInfo? get batteryInfo => _batteryInfo;
+
+  @override
+  NetworkInfo? get networkInfo => _networkInfo;
+
+  @override
+  AccessibilityInfo? get accessibilityInfo => _accessibilityInfo;
+
+  @override
+  MemoryInfo? get memoryInfo => _memoryInfo;
 
   @override
   models.DeviceInfo? get deviceInfo => _deviceInfo_;
@@ -127,6 +182,8 @@ class AppStateManagerImpl
     await _initializeDeviceInfo();
     await _initializeConnectivity();
     await _initializeLocale();
+    _initializeAccessibilityInfo();
+    _initializeNetworkInfo();
 
     _updateState(lifecycle.AppLifecycleState.appInit);
 
@@ -138,6 +195,19 @@ class AppStateManagerImpl
   void didChangeMetrics() {
     super.didChangeMetrics();
     _updateDeviceInfoOnMetricsChange();
+    _updateKeyboardInfo();
+  }
+
+  @override
+  void didHaveMemoryPressure() {
+    super.didHaveMemoryPressure();
+    _updateMemoryPressure(MemoryPressureLevel.warning);
+  }
+
+  @override
+  void didChangeAccessibilityFeatures() {
+    super.didChangeAccessibilityFeatures();
+    _initializeAccessibilityInfo();
   }
 
   Future<void> _initializeDeviceInfo() async {
@@ -544,6 +614,82 @@ class AppStateManagerImpl
     _logger.info('User unauthenticated');
   }
 
+  void _updateKeyboardInfo() {
+    try {
+      final mediaQuery = WidgetsBinding.instance.platformDispatcher.views.first;
+      final viewInsets = mediaQuery.viewInsets;
+      final devicePixelRatio = mediaQuery.devicePixelRatio;
+      final keyboardHeight = viewInsets.bottom / devicePixelRatio;
+
+      final isVisible = keyboardHeight > 0;
+
+      if (_previousKeyboardHeight != keyboardHeight) {
+        _keyboardInfo = KeyboardInfo(
+          isVisible: isVisible,
+          height: keyboardHeight,
+          timestamp: DateTime.now(),
+        );
+
+        _keyboardController.add(_keyboardInfo!);
+        _previousKeyboardHeight = keyboardHeight;
+
+        _logger.debug(
+          'Keyboard ${isVisible ? "visible" : "hidden"}: height=$keyboardHeight',
+        );
+      }
+    } catch (error) {
+      _logger.error('Failed to update keyboard info', error: error);
+    }
+  }
+
+  void _initializeNetworkInfo() {
+    try {
+      _networkInfo = NetworkInfo(
+        type: NetworkType.unknown,
+        isOnline:
+            _currentState.connectivity == lifecycle.ConnectivityState.online,
+        timestamp: DateTime.now(),
+      );
+      _networkController.add(_networkInfo!);
+      _logger.debug('Network info initialized');
+    } catch (error) {
+      _logger.error('Failed to initialize network info', error: error);
+    }
+  }
+
+  void _initializeAccessibilityInfo() {
+    try {
+      final platformDispatcher = WidgetsBinding.instance.platformDispatcher;
+      final accessibilityFeatures = platformDispatcher.accessibilityFeatures;
+
+      _accessibilityInfo = AccessibilityInfo(
+        isScreenReaderEnabled: accessibilityFeatures.accessibleNavigation,
+        isBoldTextEnabled: accessibilityFeatures.boldText,
+        isReduceMotionEnabled: accessibilityFeatures.reduceMotion,
+        isHighContrastEnabled: accessibilityFeatures.highContrast,
+        isInvertColorsEnabled: accessibilityFeatures.invertColors,
+        textScaleFactor: platformDispatcher.textScaleFactor,
+        timestamp: DateTime.now(),
+      );
+
+      _accessibilityController.add(_accessibilityInfo!);
+      _logger.info('Accessibility features initialized');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize accessibility info',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _updateMemoryPressure(MemoryPressureLevel level) {
+    _memoryInfo = MemoryInfo(pressureLevel: level, timestamp: DateTime.now());
+
+    _memoryController.add(_memoryInfo);
+    _logger.warning('Memory pressure: ${level.name}');
+  }
+
   @override
   Future<void> dispose() async {
     if (!_isInitialized) return;
@@ -556,6 +702,11 @@ class AppStateManagerImpl
     await _themeController.close();
     await _localeController.close();
     await _authController.close();
+    await _keyboardController.close();
+    await _batteryController.close();
+    await _networkController.close();
+    await _accessibilityController.close();
+    await _memoryController.close();
 
     _isInitialized = false;
     _logger.info('AppStateManager disposed');
@@ -565,6 +716,11 @@ class AppStateManagerImpl
   Map<String, dynamic> getFullState() {
     return {
       'appState': _currentState.toMap(),
+      'keyboardInfo': _keyboardInfo?.toMap(),
+      'batteryInfo': _batteryInfo?.toMap(),
+      'networkInfo': _networkInfo?.toMap(),
+      'accessibilityInfo': _accessibilityInfo?.toMap(),
+      'memoryInfo': _memoryInfo.toMap(),
       'deviceInfo': _deviceInfo_?.toMap(),
       'navigationState': _navigationState.toMap(),
       'authInfo': _authInfo.toMap(),

@@ -6,6 +6,11 @@ import 'models/device_info.dart';
 import 'models/navigation_state.dart';
 import 'models/locale_info.dart';
 import 'models/auth_info.dart';
+import 'models/keyboard_info.dart';
+import 'models/battery_info.dart';
+import 'models/network_info.dart';
+import 'models/accessibility_info.dart';
+import 'models/memory_info.dart';
 import '../core/interfaces/service_interface.dart';
 
 /// Centralized application state management service.
@@ -64,6 +69,21 @@ abstract class AppStateManager implements ServiceInterface {
   /// Current authentication information.
   AuthInfo get authInfo;
 
+  /// Current keyboard information, or `null` if not yet detected.
+  KeyboardInfo? get keyboardInfo;
+
+  /// Current battery information, or `null` if not available.
+  BatteryInfo? get batteryInfo;
+
+  /// Current network information, or `null` if not yet initialized.
+  NetworkInfo? get networkInfo;
+
+  /// Current accessibility features information.
+  AccessibilityInfo? get accessibilityInfo;
+
+  /// Current memory pressure information.
+  MemoryInfo? get memoryInfo;
+
   /// Stream of application lifecycle state changes.
   ///
   /// Emits a new [AppStateInfo] whenever the app lifecycle, focus, or
@@ -81,6 +101,32 @@ abstract class AppStateManager implements ServiceInterface {
   /// Emits a new [NavigationState] whenever navigation occurs (route changes,
   /// tab switches).
   Stream<NavigationState> get navigationStream;
+
+  /// Stream of keyboard visibility changes.
+  ///
+  /// Emits a new [KeyboardInfo] whenever keyboard visibility or height changes.
+  Stream<KeyboardInfo> get keyboardStream;
+
+  /// Stream of battery status changes.
+  ///
+  /// Emits a new [BatteryInfo] whenever battery level, charging state, or
+  /// power mode changes.
+  Stream<BatteryInfo> get batteryStream;
+
+  /// Stream of network type changes.
+  ///
+  /// Emits a new [NetworkInfo] whenever network type changes (WiFi, mobile, etc).
+  Stream<NetworkInfo> get networkStream;
+
+  /// Stream of accessibility features changes.
+  ///
+  /// Emits a new [AccessibilityInfo] whenever accessibility settings change.
+  Stream<AccessibilityInfo> get accessibilityStream;
+
+  /// Stream of memory pressure changes.
+  ///
+  /// Emits a new [MemoryInfo] whenever memory pressure level changes.
+  Stream<MemoryInfo> get memoryStream;
 
   /// Stream of theme mode changes.
   ///

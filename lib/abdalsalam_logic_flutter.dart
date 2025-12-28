@@ -14,6 +14,11 @@ export 'src/app_state/models/device_info.dart';
 export 'src/app_state/models/navigation_state.dart';
 export 'src/app_state/models/locale_info.dart';
 export 'src/app_state/models/auth_info.dart';
+export 'src/app_state/models/keyboard_info.dart';
+export 'src/app_state/models/battery_info.dart';
+export 'src/app_state/models/network_info.dart';
+export 'src/app_state/models/accessibility_info.dart';
+export 'src/app_state/models/memory_info.dart';
 
 export 'src/app_initialization/app_initializer.dart';
 export 'src/app_initialization/app_initializer_impl.dart';
