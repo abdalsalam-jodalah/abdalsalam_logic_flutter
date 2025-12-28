@@ -1,5 +1,5 @@
 // lib/src/calendar/calendar_service_impl.dart
-import 'package:add_2_calendar/add_2_calendar.dart';
+// import 'package:add_2_calendar/add_2_calendar.dart';
 import '../logging/logger_service.dart';
 import 'calendar_service.dart';
 
@@ -27,14 +27,14 @@ class CalendarServiceImpl implements CalendarService {
     String? location,
   }) async {
     try {
-      final event = Event(
-        title: title,
-        description: description ?? '',
-        location: location ?? '',
-        startDate: startDate,
-        endDate: endDate,
-      );
-      await Add2Calendar.addEvent2Cal(event);
+      // final event = Event(
+      //   title: title,
+      //   description: description ?? '',
+      //   location: location ?? '',
+      //   startDate: startDate,
+      //   endDate: endDate,
+      // );
+      // await Add2Calendar.addEvent2Cal(event);
       _logger.info('Event added to calendar: $title');
     } catch (e) {
       _logger.error('Failed to add event to calendar', error: e);

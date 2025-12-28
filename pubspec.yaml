@@ -1,7 +1,7 @@
 name: abdalsalam_logic_flutter
 description: "A comprehensive Flutter logic package providing reusable modules for app state, networking, storage, auth, and more."
 version: 0.0.1
-homepage:
+homepage: https://github.com/yourusername/abdalsalam_logic_flutter
 
 environment:
   sdk: ^3.10.1
@@ -27,9 +27,6 @@ dependencies:
   package_info_plus: ^5.0.1
   device_info_plus: ^9.1.1
   share_plus: ^7.2.1
-  # add_2_calendar: ^2.1.0
-  # contacts_service: ^0.7.1
-  # file_picker: ^6.1.1
   path: ^1.8.3
   logger: ^2.0.2+1
   equatable: ^2.0.5

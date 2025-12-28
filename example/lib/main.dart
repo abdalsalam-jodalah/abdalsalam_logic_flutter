@@ -15,7 +15,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   final AppStateManager appStateManager;
 
-  const MyApp({required this.appStateManager, Key? key}) : super(key: key);
+  const MyApp({required this.appStateManager, super.key});
 
   @override
   Widget build(BuildContext context) {

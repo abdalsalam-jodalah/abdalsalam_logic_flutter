@@ -5,8 +5,7 @@ import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 class AppStateDetectionExample extends StatefulWidget {
   final AppStateManager appStateManager;
 
-  const AppStateDetectionExample({required this.appStateManager, Key? key})
-    : super(key: key);
+  const AppStateDetectionExample({required this.appStateManager, super.key});
 
   @override
   State<AppStateDetectionExample> createState() =>
@@ -344,7 +343,7 @@ class _MemorySection extends StatelessWidget {
         return _Section(
           title: '💾 Memory Pressure',
           children: [
-            _StateRow('Level', '${memory.pressureLevel.name.toUpperCase()}'),
+            _StateRow('Level', memory.pressureLevel.name.toUpperCase()),
             _StateRow(
               'Status',
               memory.isCritical
