@@ -49,11 +49,11 @@ export 'src/file_operations/file_service_impl.dart';
 export 'src/share/share_service.dart';
 export 'src/share/share_service_impl.dart';
 
-export 'src/calendar/calendar_service.dart';
-export 'src/calendar/calendar_service_impl.dart';
+// export 'src/calendar/calendar_service.dart';
+// export 'src/calendar/calendar_service_impl.dart';
 
-export 'src/contacts/contacts_service.dart';
-export 'src/contacts/contacts_service_impl.dart';
+// export 'src/contacts/contacts_service.dart';
+// export 'src/contacts/contacts_service_impl.dart';
 
 export 'src/update_manager/update_manager.dart';
 export 'src/update_manager/update_manager_impl.dart';
