@@ -29,6 +29,7 @@ class _AppStateDetectionExampleState extends State<AppStateDetectionExample> {
             _AccessibilitySection(appStateManager: widget.appStateManager),
             _MemorySection(appStateManager: widget.appStateManager),
             _AuthenticationSection(appStateManager: widget.appStateManager),
+            _PermissionsSection(appStateManager: widget.appStateManager),
             _ThemeSection(appStateManager: widget.appStateManager),
             _LocaleSection(appStateManager: widget.appStateManager),
             _NavigationSection(appStateManager: widget.appStateManager),
@@ -394,6 +395,83 @@ class _AuthenticationSection extends StatelessWidget {
   }
 }
 
+class _PermissionsSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _PermissionsSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<PermissionsInfo>(
+      stream: appStateManager.permissionsStream,
+      initialData: appStateManager.permissionsInfo,
+      builder: (context, snapshot) {
+        final permissions = snapshot.data!;
+
+        return _Section(
+          title: '🔒 Permissions',
+          children: [
+            _StateRow('Total Permissions', '${permissions.permissions.length}'),
+            _StateRow(
+              'Granted',
+              '${permissions.getGrantedPermissions().length} ✅',
+            ),
+            _StateRow(
+              'Denied',
+              '${permissions.getDeniedPermissions().length} ❌',
+            ),
+            _StateRow(
+              'Restricted',
+              '${permissions.getRestrictedPermissions().length} ⚠️',
+            ),
+            _StateRow(
+              'Permanently Denied',
+              '${permissions.getPermanentlyDeniedPermissions().length} 🚫',
+            ),
+            if (permissions.permissions.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.only(top: 8.0, bottom: 4.0),
+                child: Text(
+                  'Permission Details:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+              ...permissions.permissions.values.map((permission) {
+                final statusIcon = _getPermissionStatusIcon(permission.status);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                  child: _StateRow(
+                    permission.type.name,
+                    '$statusIcon ${permission.status.name}',
+                  ),
+                );
+              }),
+            ],
+            _StateRow('Timestamp', _formatTime(permissions.lastUpdated)),
+          ],
+        );
+      },
+    );
+  }
+
+  String _getPermissionStatusIcon(PermissionStatus status) {
+    switch (status) {
+      case PermissionStatus.granted:
+        return '✅';
+      case PermissionStatus.denied:
+        return '❌';
+      case PermissionStatus.restricted:
+        return '⚠️';
+      case PermissionStatus.permanentlyDenied:
+        return '🚫';
+      case PermissionStatus.limited:
+        return '⚡';
+      case PermissionStatus.provisional:
+        return '📝';
+    }
+  }
+}
+
 class _ThemeSection extends StatelessWidget {
   final AppStateManager appStateManager;
 
@@ -522,40 +600,50 @@ class _FullStateSection extends StatelessWidget {
     buffer.writeln('═══════════════════════════════════════════════════');
     buffer.writeln('APP STATE SNAPSHOT');
     buffer.writeln('═══════════════════════════════════════════════════');
-    
+
     final state = manager.currentState;
     buffer.writeln('Lifecycle: ${state.lifecycle.name}');
-    
+
     final device = manager.deviceInfo;
     buffer.writeln('\n[DEVICE]');
     buffer.writeln('  Model: ${device?.deviceModel}');
     buffer.writeln('  OS: ${device?.osVersion}');
-    buffer.writeln('  Screen: ${device?.screenSize.width.toStringAsFixed(0)} × ${device?.screenSize.height.toStringAsFixed(0)}');
-    
+    buffer.writeln(
+      '  Screen: ${device?.screenSize.width.toStringAsFixed(0)} × ${device?.screenSize.height.toStringAsFixed(0)}',
+    );
+
     final battery = manager.batteryInfo;
     buffer.writeln('\n[BATTERY]');
     buffer.writeln('  Level: ${battery?.batteryLevel}%');
     buffer.writeln('  State: ${battery?.batteryState.name}');
-    
+
     final network = manager.networkInfo;
     buffer.writeln('\n[NETWORK]');
     buffer.writeln('  Online: ${network?.isOnline}');
     buffer.writeln('  Type: ${network?.type.name}');
-    
+
     final keyboard = manager.keyboardInfo;
     buffer.writeln('\n[KEYBOARD]');
     buffer.writeln('  Visible: ${keyboard?.isVisible}');
     buffer.writeln('  Height: ${keyboard?.height.toStringAsFixed(0)}px');
-    
+
     final memory = manager.memoryInfo;
     buffer.writeln('\n[MEMORY]');
     buffer.writeln('  Level: ${memory?.pressureLevel.name}');
-    
+
     final a11y = manager.accessibilityInfo;
     buffer.writeln('\n[ACCESSIBILITY]');
     buffer.writeln('  Screen Reader: ${a11y?.isScreenReaderEnabled}');
     buffer.writeln('  Bold Text: ${a11y?.isBoldTextEnabled}');
-    
+
+    final permissions = manager.permissionsInfo;
+    buffer.writeln('\n[PERMISSIONS]');
+    buffer.writeln('  Granted: ${permissions.getGrantedPermissions().length}');
+    buffer.writeln('  Denied: ${permissions.getDeniedPermissions().length}');
+    buffer.writeln(
+      '  Restricted: ${permissions.getRestrictedPermissions().length}',
+    );
+
     return buffer.toString();
   }
 }

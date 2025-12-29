@@ -45,5 +45,21 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to demonstrate permission handling.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs microphone access to demonstrate permission handling.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs location access to demonstrate permission handling.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs location access to demonstrate permission handling.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>This app needs contacts access to demonstrate permission handling.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>This app needs calendar access to demonstrate permission handling.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs photo library access to demonstrate permission handling.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>This app needs Bluetooth access to demonstrate permission handling.</string>
 </dict>
 </plist>

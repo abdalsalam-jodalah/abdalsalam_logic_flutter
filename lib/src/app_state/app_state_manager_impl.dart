@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 import 'app_state_manager.dart';
 import 'models/app_lifecycle_state.dart' as lifecycle;
 import 'models/device_info.dart' as models;
@@ -195,6 +196,7 @@ class AppStateManagerImpl
     await _initializeLocale();
     _initializeAccessibilityInfo();
     _initializeNetworkInfo();
+    await _initializePermissions();
 
     _updateState(lifecycle.AppLifecycleState.appInit);
 
@@ -715,6 +717,107 @@ class AppStateManagerImpl
 
     _memoryController.add(_memoryInfo);
     _logger.warning('Memory pressure: ${level.name}');
+  }
+
+  Future<void> _initializePermissions() async {
+    try {
+      final List<ph.Permission> permissionsToCheck = [
+        ph.Permission.camera,
+        ph.Permission.microphone,
+        ph.Permission.location,
+        ph.Permission.locationAlways,
+        ph.Permission.locationWhenInUse,
+        ph.Permission.calendar,
+        ph.Permission.contacts,
+        ph.Permission.photos,
+        ph.Permission.videos,
+        ph.Permission.storage,
+        ph.Permission.notification,
+        ph.Permission.phone,
+        ph.Permission.sms,
+        ph.Permission.sensors,
+        ph.Permission.bluetooth,
+      ];
+
+      var updatedPermissions = PermissionsInfo.initial();
+
+      for (final permission in permissionsToCheck) {
+        try {
+          final status = await permission.status;
+          final permissionType = _mapPermissionHandlerToType(permission);
+
+          if (permissionType != null) {
+            final permissionStatus = _mapPermissionStatus(status);
+            final permissionInfo = PermissionInfo(
+              type: permissionType,
+              status: permissionStatus,
+              isDetermined:
+                  status.isDenied ||
+                  status.isGranted ||
+                  status.isRestricted ||
+                  status.isLimited ||
+                  status.isPermanentlyDenied,
+              isGranted: status.isGranted,
+              isDenied: status.isDenied,
+              isRestricted: status.isRestricted,
+              isLimited: status.isLimited,
+              isPermanentlyDenied: status.isPermanentlyDenied,
+            );
+            updatedPermissions = updatedPermissions.updatePermission(
+              permissionInfo,
+            );
+          }
+        } catch (e) {
+          _logger.warning(
+            'Failed to check permission ${permission.toString()}: $e',
+          );
+        }
+      }
+
+      _permissionsInfo = updatedPermissions;
+      _permissionsController.add(_permissionsInfo);
+      _logger.info(
+        'Permissions initialized: ${_permissionsInfo.permissions.length} permissions tracked',
+      );
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize permissions',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  PermissionType? _mapPermissionHandlerToType(ph.Permission permission) {
+    if (permission == ph.Permission.camera) return PermissionType.camera;
+    if (permission == ph.Permission.microphone)
+      return PermissionType.microphone;
+    if (permission == ph.Permission.location) return PermissionType.location;
+    if (permission == ph.Permission.locationAlways)
+      return PermissionType.locationAlways;
+    if (permission == ph.Permission.locationWhenInUse)
+      return PermissionType.locationWhenInUse;
+    if (permission == ph.Permission.calendar) return PermissionType.calendar;
+    if (permission == ph.Permission.contacts) return PermissionType.contacts;
+    if (permission == ph.Permission.photos) return PermissionType.photos;
+    if (permission == ph.Permission.videos) return PermissionType.videos;
+    if (permission == ph.Permission.storage) return PermissionType.storage;
+    if (permission == ph.Permission.notification)
+      return PermissionType.notifications;
+    if (permission == ph.Permission.phone) return PermissionType.phone;
+    if (permission == ph.Permission.sms) return PermissionType.sms;
+    if (permission == ph.Permission.sensors) return PermissionType.sensors;
+    if (permission == ph.Permission.bluetooth) return PermissionType.bluetooth;
+    return null;
+  }
+
+  PermissionStatus _mapPermissionStatus(ph.PermissionStatus status) {
+    if (status.isGranted) return PermissionStatus.granted;
+    if (status.isDenied) return PermissionStatus.denied;
+    if (status.isRestricted) return PermissionStatus.restricted;
+    if (status.isLimited) return PermissionStatus.limited;
+    if (status.isPermanentlyDenied) return PermissionStatus.permanentlyDenied;
+    return PermissionStatus.denied;
   }
 
   @override
