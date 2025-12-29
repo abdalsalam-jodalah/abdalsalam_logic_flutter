@@ -4,7 +4,16 @@ A comprehensive Flutter logic package providing reusable modules for app state, 
 
 ## Features
 
-- **App State Management** - Centralized app state management with reactive state updates
+- **App State Management** - Comprehensive, modular state tracking with 21+ domains
+  - **Modular & Opt-In Architecture** - Only initialize features you need
+  - App Lifecycle, Connectivity, Device Info
+  - WiFi & Mobile Data tracking with real device data
+  - Battery, Storage, Memory monitoring
+  - Audio, Orientation, Screen Metrics
+  - Permissions (25+ types), System Settings, Accessibility
+  - Navigation, Theme, Locale management
+  - [📖 Complete App State Guide](docs/APP_STATE_GUIDE.md)
+  - [🏗️ Modular Architecture Guide](docs/MODULAR_ARCHITECTURE.md)
 - **App Initialization** - Structured app initialization with service orchestration
 - **API & Networking** - HTTP client with interceptors, error handling, and token management
 - **Logging** - Comprehensive logging service with multiple log levels
@@ -83,19 +92,171 @@ await appInitializer.initialize();
 
 ### App State Management
 
-The `AppStateManager` provides centralized state management for your entire application, tracking lifecycle, device info, navigation, theme, locale, and authentication state.
+The `AppStateManager` provides comprehensive, modular state management with **21+ state domains**. It follows a **zero-impact, opt-in architecture** where you only initialize features you need.
 
-#### Features
+#### 🎯 Key Principles
 
-- **Lifecycle Tracking**: Monitors app foreground/background, connectivity, and initialization states
-- **Device Information**: Automatic detection of device type, OS, screen metrics, and responsive breakpoints
-- **Connectivity Monitoring**: Real-time network connectivity status
-- **Navigation State**: Tracks routes, history, and tab navigation
-- **Theme & Locale**: Manages theme mode and locale with RTL support
-- **Authentication State**: Tracks user authentication status and user info
-- **Reactive Streams**: Broadcast streams for all state domains
+- **Modular**: Enable only the features you need via `AppStateConfig`
+- **Zero Impact**: Disabled features add no code/dependencies to your bundle
+- **Reactive**: All state changes broadcast via streams
+- **Real Device Data**: Uses actual platform data (not mocks)
+- **Manual Refresh**: Pull latest data on-demand
 
-#### Basic Usage
+#### 🚀 Quick Start
+
+```dart
+import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
+
+// 1. Create custom configuration (opt-in features)
+final config = AppStateConfig(
+  // Core features
+  enableAppLifecycle: true,
+  enableDeviceInfo: true,
+  enableConnectivity: true,
+  
+  // Network details
+  enableWiFi: true,
+  enableMobileData: true,
+  
+  // Device state
+  enableBattery: true,
+  enableStorage: true,
+  enableOrientation: true,
+  
+  // Permissions
+  enablePermissions: true,
+  
+  // App metadata
+  enableAppVersion: true,
+  
+  // Skip unused features
+  enableMemory: false,
+  enableAudio: false,
+  enableVPN: false,
+  // ... etc
+);
+
+// 2. Initialize with logger
+final logger = LoggerServiceImpl();
+final appStateManager = AppStateManagerImpl.create(logger, config: config);
+await appStateManager.initialize();
+
+// 3. Use in your app
+runApp(MyApp(appStateManager: appStateManager));
+```
+
+#### 📊 State Domains Available
+
+| Domain | Description | Key Data |
+|--------|-------------|----------|
+| **App Lifecycle** | Foreground/background, online/offline | States, focus, connectivity |
+| **Device Info** | Device type, OS, screen size | Phone/tablet/desktop, breakpoints |
+| **Connectivity** | Network connection status | Online/offline |
+| **WiFi Info** | WiFi connection details | SSID, IP, signal, speed, frequency |
+| **Mobile Data** | Cellular connection tracking | 2G/3G/4G/5G, signal, operator |
+| **VPN Info** | VPN connection detection | Connection status |
+| **Battery Info** | Battery monitoring with live updates | Level, state, health, temperature |
+| **Storage Info** | Device storage tracking | Total, free, used, percentage |
+| **Memory Info** | System memory & pressure | Total, free, used, pressure level |
+| **Audio State** | Volume monitoring | Level, output type, mute status |
+| **Orientation** | Screen orientation | Portrait/landscape |
+| **Screen Metrics** | Display measurements | Pixel ratio, DPI, safe areas |
+| **App Version** | Version & build info | Version, build number, package |
+| **App Runtime** | Running duration | Uptime tracking |
+| **System Settings** | System-level settings | Dark mode, low power, airplane |
+| **Permissions** | 25+ permission types | Camera, location, contacts, etc. |
+| **Keyboard** | Keyboard visibility & height | Visible state, height |
+| **Network Type** | Network connection type | WiFi, mobile, ethernet |
+| **Accessibility** | Accessibility features | Screen reader, bold text, reduce motion |
+| **Navigation** | Route & tab tracking | Current route, history, params |
+| **Theme & Locale** | Theme mode & language | Dark/light mode, locale, RTL |
+
+#### 📖 Documentation
+
+- **[Complete App State Guide](docs/APP_STATE_GUIDE.md)** - Detailed usage for all 21 domains
+- **[Modular Architecture Guide](docs/MODULAR_ARCHITECTURE.md)** - Design principles & patterns
+- **[Example App](example/)** - Working demo with all features
+
+#### ⚡ Common Use Cases
+
+**1. Network-aware sync:**
+```dart
+appStateManager.stateStream.listen((state) {
+  if (state.isOnline && state.isForeground) {
+    syncData();
+  }
+});
+```
+
+**2. Responsive UI:**
+```dart
+final device = appStateManager.deviceInfo;
+if (device.isTablet || device.breakpoint.index >= ResponsiveBreakpoint.lg.index) {
+  // Desktop/tablet layout
+} else {
+  // Mobile layout
+}
+```
+
+**3. Battery optimization:**
+```dart
+appStateManager.batteryStream.listen((battery) {
+  if (battery.isLowBattery) {
+    disableBackgroundSync();
+  }
+});
+```
+
+**4. WiFi vs Mobile Data:**
+```dart
+final wifi = appStateManager.wifiInfo;
+final mobile = appStateManager.mobileDataInfo;
+
+if (wifi.isConnected) {
+  // High-quality streaming on WiFi
+  setQuality(VideoQuality.high);
+} else if (mobile.isConnected) {
+  // Lower quality on mobile data
+  setQuality(VideoQuality.standard);
+}
+```
+
+**5. Manual refresh:**
+```dart
+// Refresh all enabled features
+await appStateManager.refreshAll();
+
+// Or refresh specific domains
+await appStateManager.refreshWiFi();
+await appStateManager.refreshBattery();
+```
+
+#### 📦 Required Dependencies
+
+Only add dependencies for features you enable:
+
+```yaml
+dependencies:
+  # Core (if using app state)
+  connectivity_plus: ^5.0.2
+  device_info_plus: ^9.1.1
+  
+  # Optional (based on your AppStateConfig)
+  battery_plus: ^5.0.2              # if enableBattery
+  network_info_plus: ^5.0.1         # if enableWiFi or enableMobileData
+  disk_space_plus: ^0.2.2           # if enableStorage
+  volume_controller: ^2.0.7         # if enableAudio
+  permission_handler: ^12.0.1       # if enablePermissions
+  package_info_plus: ^5.0.1         # if enableAppVersion
+```
+
+See [Installation Guide](docs/APP_STATE_GUIDE.md#installation) for platform-specific setup.
+
+---
+
+### Other Core Features
+
+#### API & Networking
 
 ```dart
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';

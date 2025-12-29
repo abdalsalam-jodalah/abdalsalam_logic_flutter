@@ -14,13 +14,26 @@ Context:
 - **Platforms**: Android, iOS, Windows, macOS, Linux, Web
 - **Package Modules**: App initialization, state management, networking, storage, auth, error handling, logging, sync, prefetch, and utility services
 - **Design Philosophy**: Logic-only package; UI/widgets only if directly related to core logic functionality
-- **Modular Architecture**: **CRITICAL** - Features are opt-in and only initialized if explicitly requested by the client app. This ensures:
-  - Zero unnecessary dependencies bundled into the app
-  - No permissions requested for unused features
-  - App store compliance (only request permissions for features actually used)
-  - Minimal app size and resource usage
-  - Each feature module can be independently enabled/disabled via configuration
+- **Modular Architecture**: **CRITICAL** - Features are opt-in and only initialized if explicitly requested by the client app via `AppStateConfig`. This ensures:
+  - **Zero unnecessary dependencies bundled** - Disabled features don't bundle their packages
+  - **No permissions requested for unused features** - App store compliance
+  - **Minimal app size and resource usage** - Only what's needed is included
+  - **Each feature module independently enabled/disabled** - Fine-grained control
+  - **Configuration-driven initialization** - Features check config flags before initializing
+  - **Null returns for disabled features** - Getters return null/initial values when feature disabled
+  - **Example**: 
+    ```dart
+    // Only battery monitoring enabled - only battery_plus dependency bundled
+    const AppStateConfig(enableBattery: true)
+    
+    // All features enabled - all dependencies bundled (use for demos only)
+    const AppStateConfig.all()
+    
+    // Minimal config - only core features, zero optional dependencies
+    const AppStateConfig.minimal()
+    ```
 - **Reference**: See `_base_logic_summary.md` for implementation patterns and architecture decisions from a production app using similar logic
+- **Complete Documentation**: See `docs/APP_STATE_GUIDE.md` for comprehensive guide to all 21+ app state domains, installation, dependencies, and usage patterns
 
 You will see now **files structure then important rules then implementation guidance**
 
