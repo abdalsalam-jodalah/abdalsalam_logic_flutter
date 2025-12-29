@@ -3,6 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'models/app_lifecycle_state.dart' as lifecycle;
 import 'models/device_info.dart';
+import 'models/device_orientation_info.dart';
+import 'models/app_version_info.dart';
+import 'models/storage_info.dart';
+import 'models/system_settings_info.dart';
+import 'models/screen_metrics_info.dart';
+import 'models/vpn_info.dart';
+import 'models/wifi_info.dart';
+import 'models/audio_state_info.dart';
+import 'models/app_runtime_info.dart';
 import 'models/navigation_state.dart';
 import 'models/locale_info.dart';
 import 'models/auth_info.dart';
@@ -88,6 +97,33 @@ abstract class AppStateManager implements ServiceInterface {
   /// Current permissions information.
   PermissionsInfo get permissionsInfo;
 
+  /// Current device orientation information.
+  DeviceOrientationInfo get deviceOrientationInfo;
+
+  /// Current app version information.
+  AppVersionInfo get appVersionInfo;
+
+  /// Current storage information.
+  StorageInfo get storageInfo;
+
+  /// Current system settings information.
+  SystemSettingsInfo get systemSettingsInfo;
+
+  /// Current screen metrics information.
+  ScreenMetricsInfo get screenMetricsInfo;
+
+  /// Current VPN connection information.
+  VpnInfo get vpnInfo;
+
+  /// Current WiFi connection information.
+  WiFiInfo get wifiInfo;
+
+  /// Current audio state information.
+  AudioStateInfo get audioStateInfo;
+
+  /// Current app runtime information.
+  AppRuntimeInfo get appRuntimeInfo;
+
   /// Stream of application lifecycle state changes.
   ///
   /// Emits a new [AppStateInfo] whenever the app lifecycle, focus, or
@@ -151,6 +187,51 @@ abstract class AppStateManager implements ServiceInterface {
   ///
   /// Emits a new [PermissionsInfo] whenever permissions are updated.
   Stream<PermissionsInfo> get permissionsStream;
+
+  /// Stream of device orientation changes.
+  ///
+  /// Emits a new [DeviceOrientationInfo] whenever device orientation changes.
+  Stream<DeviceOrientationInfo> get deviceOrientationStream;
+
+  /// Stream of app version changes.
+  ///
+  /// Emits a new [AppVersionInfo] if app version information is updated.
+  Stream<AppVersionInfo> get appVersionStream;
+
+  /// Stream of storage information changes.
+  ///
+  /// Emits a new [StorageInfo] whenever storage information is updated.
+  Stream<StorageInfo> get storageStream;
+
+  /// Stream of system settings changes.
+  ///
+  /// Emits a new [SystemSettingsInfo] whenever system settings change.
+  Stream<SystemSettingsInfo> get systemSettingsStream;
+
+  /// Stream of screen metrics changes.
+  ///
+  /// Emits a new [ScreenMetricsInfo] whenever screen metrics change.
+  Stream<ScreenMetricsInfo> get screenMetricsStream;
+
+  /// Stream of VPN connection changes.
+  ///
+  /// Emits a new [VpnInfo] whenever VPN status changes.
+  Stream<VpnInfo> get vpnStream;
+
+  /// Stream of WiFi information changes.
+  ///
+  /// Emits a new [WiFiInfo] whenever WiFi status changes.
+  Stream<WiFiInfo> get wifiStream;
+
+  /// Stream of audio state changes.
+  ///
+  /// Emits a new [AudioStateInfo] whenever audio state changes.
+  Stream<AudioStateInfo> get audioStateStream;
+
+  /// Stream of app runtime information changes.
+  ///
+  /// Emits a new [AppRuntimeInfo] whenever runtime information is updated.
+  Stream<AppRuntimeInfo> get appRuntimeStream;
 
   /// Updates the navigation state with a new route.
   ///

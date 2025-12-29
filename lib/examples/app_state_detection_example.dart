@@ -22,10 +22,19 @@ class _AppStateDetectionExampleState extends State<AppStateDetectionExample> {
           children: [
             _AppLifecycleSection(appStateManager: widget.appStateManager),
             _DeviceInfoSection(appStateManager: widget.appStateManager),
+            _DeviceOrientationSection(appStateManager: widget.appStateManager),
+            _AppVersionSection(appStateManager: widget.appStateManager),
+            _AppRuntimeSection(appStateManager: widget.appStateManager),
             _ConnectivitySection(appStateManager: widget.appStateManager),
+            _WiFiSection(appStateManager: widget.appStateManager),
+            _VpnSection(appStateManager: widget.appStateManager),
             _KeyboardSection(appStateManager: widget.appStateManager),
             _BatterySection(appStateManager: widget.appStateManager),
             _NetworkSection(appStateManager: widget.appStateManager),
+            _StorageSection(appStateManager: widget.appStateManager),
+            _ScreenMetricsSection(appStateManager: widget.appStateManager),
+            _SystemSettingsSection(appStateManager: widget.appStateManager),
+            _AudioStateSection(appStateManager: widget.appStateManager),
             _AccessibilitySection(appStateManager: widget.appStateManager),
             _MemorySection(appStateManager: widget.appStateManager),
             _AuthenticationSection(appStateManager: widget.appStateManager),
@@ -472,6 +481,291 @@ class _PermissionsSection extends StatelessWidget {
   }
 }
 
+class _DeviceOrientationSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _DeviceOrientationSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DeviceOrientationInfo>(
+      stream: appStateManager.deviceOrientationStream,
+      initialData: appStateManager.deviceOrientationInfo,
+      builder: (context, snapshot) {
+        final orientation = snapshot.data!;
+
+        return _Section(
+          title: '📱 Device Orientation',
+          children: [
+            _StateRow('Current', orientation.currentOrientation.name),
+            _StateRow('Is Portrait', orientation.isPortrait ? '✅ Yes' : '❌ No'),
+            _StateRow(
+              'Is Landscape',
+              orientation.isLandscape ? '✅ Yes' : '❌ No',
+            ),
+            _StateRow('Timestamp', _formatTime(orientation.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AppVersionSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _AppVersionSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<AppVersionInfo>(
+      stream: appStateManager.appVersionStream,
+      initialData: appStateManager.appVersionInfo,
+      builder: (context, snapshot) {
+        final version = snapshot.data!;
+
+        return _Section(
+          title: '📦 App Version',
+          children: [
+            _StateRow('App Name', version.appName),
+            _StateRow('Version', version.version),
+            _StateRow('Build Number', version.buildNumber),
+            _StateRow('Package Name', version.packageName),
+            _StateRow('Timestamp', _formatTime(version.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AppRuntimeSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _AppRuntimeSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<AppRuntimeInfo>(
+      stream: appStateManager.appRuntimeStream,
+      initialData: appStateManager.appRuntimeInfo,
+      builder: (context, snapshot) {
+        final runtime = snapshot.data!;
+
+        return _Section(
+          title: '⏱️ App Runtime',
+          children: [
+            _StateRow('Launch Time', _formatTime(runtime.appLaunchTime)),
+            _StateRow('Uptime', runtime.uptime),
+            _StateRow('Session Starts', '${runtime.sessionStartCount}'),
+            _StateRow('Timestamp', _formatTime(runtime.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _WiFiSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _WiFiSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<WiFiInfo>(
+      stream: appStateManager.wifiStream,
+      initialData: appStateManager.wifiInfo,
+      builder: (context, snapshot) {
+        final wifi = snapshot.data!;
+
+        return _Section(
+          title: '📶 WiFi',
+          children: [
+            _StateRow('Connected', wifi.isConnected ? '✅ Yes' : '❌ No'),
+            if (wifi.ssid != null) _StateRow('SSID', wifi.ssid!),
+            if (wifi.bssid != null) _StateRow('BSSID', wifi.bssid!),
+            if (wifi.signalStrength != null)
+              _StateRow('Signal Strength', '${wifi.signalStrength} dBm'),
+            _StateRow('Signal Quality', wifi.signalQuality),
+            _StateRow('Timestamp', _formatTime(wifi.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _VpnSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _VpnSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<VpnInfo>(
+      stream: appStateManager.vpnStream,
+      initialData: appStateManager.vpnInfo,
+      builder: (context, snapshot) {
+        final vpn = snapshot.data!;
+
+        return _Section(
+          title: '🔐 VPN',
+          children: [
+            _StateRow('Connected', vpn.isConnected ? '✅ Yes' : '❌ No'),
+            if (vpn.vpnName != null) _StateRow('VPN Name', vpn.vpnName!),
+            _StateRow('Timestamp', _formatTime(vpn.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StorageSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _StorageSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<StorageInfo>(
+      stream: appStateManager.storageStream,
+      initialData: appStateManager.storageInfo,
+      builder: (context, snapshot) {
+        final storage = snapshot.data!;
+
+        return _Section(
+          title: '💾 Storage',
+          children: [
+            _StateRow('Total Space', storage.totalSpaceGB),
+            _StateRow('Free Space', storage.freeSpaceGB),
+            _StateRow('Used Space', storage.usedSpaceGB),
+            _StateRow(
+              'Usage',
+              '${storage.usagePercentage.toStringAsFixed(1)}%',
+            ),
+            _StateRow('Timestamp', _formatTime(storage.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ScreenMetricsSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _ScreenMetricsSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<ScreenMetricsInfo>(
+      stream: appStateManager.screenMetricsStream,
+      initialData: appStateManager.screenMetricsInfo,
+      builder: (context, snapshot) {
+        final metrics = snapshot.data!;
+
+        return _Section(
+          title: '📐 Screen Metrics',
+          children: [
+            _StateRow('Pixel Ratio', metrics.pixelRatio.toStringAsFixed(2)),
+            _StateRow('DPI', metrics.dpi.toStringAsFixed(1)),
+            _StateRow('Has Notch', metrics.hasNotch ? '✅ Yes' : '❌ No'),
+            _StateRow(
+              'Safe Area Top',
+              '${metrics.totalSafeAreaTop.toStringAsFixed(1)}px',
+            ),
+            _StateRow(
+              'Safe Area Bottom',
+              '${metrics.totalSafeAreaBottom.toStringAsFixed(1)}px',
+            ),
+            _StateRow(
+              'View Inset Top',
+              '${metrics.viewInsetTop.toStringAsFixed(1)}px',
+            ),
+            _StateRow(
+              'View Inset Bottom',
+              '${metrics.viewInsetBottom.toStringAsFixed(1)}px',
+            ),
+            _StateRow('Timestamp', _formatTime(metrics.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SystemSettingsSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _SystemSettingsSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<SystemSettingsInfo>(
+      stream: appStateManager.systemSettingsStream,
+      initialData: appStateManager.systemSettingsInfo,
+      builder: (context, snapshot) {
+        final settings = snapshot.data!;
+
+        return _Section(
+          title: '⚙️ System Settings',
+          children: [
+            _StateRow(
+              'Low Power Mode',
+              settings.isLowPowerMode ? '✅ On' : '❌ Off',
+            ),
+            _StateRow(
+              'Airplane Mode',
+              settings.isAirplaneMode ? '✅ On' : '❌ Off',
+            ),
+            _StateRow(
+              'Dark Mode',
+              settings.isDarkModeEnabled ? '🌙 On' : '☀️ Off',
+            ),
+            _StateRow('Timestamp', _formatTime(settings.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AudioStateSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _AudioStateSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<AudioStateInfo>(
+      stream: appStateManager.audioStateStream,
+      initialData: appStateManager.audioStateInfo,
+      builder: (context, snapshot) {
+        final audio = snapshot.data!;
+
+        return _Section(
+          title: '🔊 Audio State',
+          children: [
+            _StateRow(
+              'Volume Level',
+              '${audio.volumeLevel}/${audio.maxVolume}',
+            ),
+            _StateRow(
+              'Volume %',
+              '${audio.volumePercentage.toStringAsFixed(0)}%',
+            ),
+            _StateRow('Output Type', audio.outputType.name),
+            _StateRow('Muted', audio.isMuted ? '🔇 Yes' : '🔊 No'),
+            _StateRow('Timestamp', _formatTime(audio.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _ThemeSection extends StatelessWidget {
   final AppStateManager appStateManager;
 
@@ -643,6 +937,50 @@ class _FullStateSection extends StatelessWidget {
     buffer.writeln(
       '  Restricted: ${permissions.getRestrictedPermissions().length}',
     );
+
+    final orientation = manager.deviceOrientationInfo;
+    buffer.writeln('\n[ORIENTATION]');
+    buffer.writeln('  Current: ${orientation.currentOrientation.name}');
+    buffer.writeln('  Portrait: ${orientation.isPortrait}');
+
+    final version = manager.appVersionInfo;
+    buffer.writeln('\n[APP VERSION]');
+    buffer.writeln('  Version: ${version.version}');
+    buffer.writeln('  Build: ${version.buildNumber}');
+
+    final runtime = manager.appRuntimeInfo;
+    buffer.writeln('\n[RUNTIME]');
+    buffer.writeln('  Uptime: ${runtime.uptime}');
+    buffer.writeln('  Sessions: ${runtime.sessionStartCount}');
+
+    final wifi = manager.wifiInfo;
+    buffer.writeln('\n[WIFI]');
+    buffer.writeln('  Connected: ${wifi.isConnected}');
+    if (wifi.ssid != null) buffer.writeln('  SSID: ${wifi.ssid}');
+
+    final vpn = manager.vpnInfo;
+    buffer.writeln('\n[VPN]');
+    buffer.writeln('  Connected: ${vpn.isConnected}');
+
+    final storage = manager.storageInfo;
+    buffer.writeln('\n[STORAGE]');
+    buffer.writeln('  Free: ${storage.freeSpaceGB}');
+    buffer.writeln('  Usage: ${storage.usagePercentage.toStringAsFixed(1)}%');
+
+    final metrics = manager.screenMetricsInfo;
+    buffer.writeln('\n[SCREEN METRICS]');
+    buffer.writeln('  Pixel Ratio: ${metrics.pixelRatio}');
+    buffer.writeln('  Has Notch: ${metrics.hasNotch}');
+
+    final settings = manager.systemSettingsInfo;
+    buffer.writeln('\n[SYSTEM SETTINGS]');
+    buffer.writeln('  Low Power: ${settings.isLowPowerMode}');
+    buffer.writeln('  Dark Mode: ${settings.isDarkModeEnabled}');
+
+    final audio = manager.audioStateInfo;
+    buffer.writeln('\n[AUDIO]');
+    buffer.writeln('  Volume: ${audio.volumePercentage.toStringAsFixed(0)}%');
+    buffer.writeln('  Output: ${audio.outputType.name}');
 
     return buffer.toString();
   }

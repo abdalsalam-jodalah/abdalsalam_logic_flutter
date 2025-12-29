@@ -6,8 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'app_state_manager.dart';
 import 'models/app_lifecycle_state.dart' as lifecycle;
+import 'models/device_orientation_info.dart';
+import 'models/app_version_info.dart';
+import 'models/storage_info.dart';
+import 'models/system_settings_info.dart';
+import 'models/screen_metrics_info.dart';
+import 'models/vpn_info.dart';
+import 'models/wifi_info.dart';
+import 'models/audio_state_info.dart';
+import 'models/app_runtime_info.dart';
 import 'models/device_info.dart' as models;
 import 'models/navigation_state.dart';
 import 'models/locale_info.dart';
@@ -77,6 +87,16 @@ class AppStateManagerImpl
     timestamp: DateTime.now(),
   );
   PermissionsInfo _permissionsInfo = PermissionsInfo.initial();
+  DeviceOrientationInfo _deviceOrientationInfo =
+      DeviceOrientationInfo.initial();
+  AppVersionInfo _appVersionInfo = AppVersionInfo.initial();
+  StorageInfo _storageInfo = StorageInfo.initial();
+  SystemSettingsInfo _systemSettingsInfo = SystemSettingsInfo.initial();
+  ScreenMetricsInfo _screenMetricsInfo = ScreenMetricsInfo.initial();
+  VpnInfo _vpnInfo = VpnInfo.initial();
+  WiFiInfo _wifiInfo = WiFiInfo.initial();
+  AudioStateInfo _audioStateInfo = AudioStateInfo.initial();
+  AppRuntimeInfo _appRuntimeInfo = AppRuntimeInfo.initial();
 
   double _previousKeyboardHeight = 0.0;
 
@@ -103,6 +123,23 @@ class AppStateManagerImpl
   final StreamController<MemoryInfo> _memoryController =
       StreamController.broadcast();
   final StreamController<PermissionsInfo> _permissionsController =
+      StreamController.broadcast();
+  final StreamController<DeviceOrientationInfo> _deviceOrientationController =
+      StreamController.broadcast();
+  final StreamController<AppVersionInfo> _appVersionController =
+      StreamController.broadcast();
+  final StreamController<StorageInfo> _storageController =
+      StreamController.broadcast();
+  final StreamController<SystemSettingsInfo> _systemSettingsController =
+      StreamController.broadcast();
+  final StreamController<ScreenMetricsInfo> _screenMetricsController =
+      StreamController.broadcast();
+  final StreamController<VpnInfo> _vpnController = StreamController.broadcast();
+  final StreamController<WiFiInfo> _wifiController =
+      StreamController.broadcast();
+  final StreamController<AudioStateInfo> _audioStateController =
+      StreamController.broadcast();
+  final StreamController<AppRuntimeInfo> _appRuntimeController =
       StreamController.broadcast();
 
   @override
@@ -144,6 +181,36 @@ class AppStateManagerImpl
       _permissionsController.stream;
 
   @override
+  Stream<DeviceOrientationInfo> get deviceOrientationStream =>
+      _deviceOrientationController.stream;
+
+  @override
+  Stream<AppVersionInfo> get appVersionStream => _appVersionController.stream;
+
+  @override
+  Stream<StorageInfo> get storageStream => _storageController.stream;
+
+  @override
+  Stream<SystemSettingsInfo> get systemSettingsStream =>
+      _systemSettingsController.stream;
+
+  @override
+  Stream<ScreenMetricsInfo> get screenMetricsStream =>
+      _screenMetricsController.stream;
+
+  @override
+  Stream<VpnInfo> get vpnStream => _vpnController.stream;
+
+  @override
+  Stream<WiFiInfo> get wifiStream => _wifiController.stream;
+
+  @override
+  Stream<AudioStateInfo> get audioStateStream => _audioStateController.stream;
+
+  @override
+  Stream<AppRuntimeInfo> get appRuntimeStream => _appRuntimeController.stream;
+
+  @override
   lifecycle.AppStateInfo get currentState => _currentState;
   @override
   KeyboardInfo? get keyboardInfo => _keyboardInfo;
@@ -162,6 +229,33 @@ class AppStateManagerImpl
 
   @override
   PermissionsInfo get permissionsInfo => _permissionsInfo;
+
+  @override
+  DeviceOrientationInfo get deviceOrientationInfo => _deviceOrientationInfo;
+
+  @override
+  AppVersionInfo get appVersionInfo => _appVersionInfo;
+
+  @override
+  StorageInfo get storageInfo => _storageInfo;
+
+  @override
+  SystemSettingsInfo get systemSettingsInfo => _systemSettingsInfo;
+
+  @override
+  ScreenMetricsInfo get screenMetricsInfo => _screenMetricsInfo;
+
+  @override
+  VpnInfo get vpnInfo => _vpnInfo;
+
+  @override
+  WiFiInfo get wifiInfo => _wifiInfo;
+
+  @override
+  AudioStateInfo get audioStateInfo => _audioStateInfo;
+
+  @override
+  AppRuntimeInfo get appRuntimeInfo => _appRuntimeInfo;
 
   @override
   models.DeviceInfo? get deviceInfo => _deviceInfo_;
@@ -197,6 +291,18 @@ class AppStateManagerImpl
     _initializeAccessibilityInfo();
     _initializeNetworkInfo();
     await _initializePermissions();
+    await _initializeOrientation();
+    await _initializeAppVersion();
+    await _initializeStorageInfo();
+    await _initializeScreenMetrics();
+    await _initializeWiFiInfo();
+    await _initializeSystemSettings();
+    _vpnInfo = VpnInfo.initial();
+    _vpnController.add(_vpnInfo);
+    _audioStateInfo = AudioStateInfo.initial();
+    _audioStateController.add(_audioStateInfo);
+    _appRuntimeInfo = AppRuntimeInfo.initial();
+    _appRuntimeController.add(_appRuntimeInfo);
 
     _updateState(lifecycle.AppLifecycleState.appInit);
 
@@ -209,6 +315,8 @@ class AppStateManagerImpl
     super.didChangeMetrics();
     _updateDeviceInfoOnMetricsChange();
     _updateKeyboardInfo();
+    _updateOrientation();
+    _updateScreenMetrics();
   }
 
   @override
@@ -737,6 +845,12 @@ class AppStateManagerImpl
         ph.Permission.sms,
         ph.Permission.sensors,
         ph.Permission.bluetooth,
+        if (!kIsWeb) ph.Permission.bluetoothScan,
+        if (!kIsWeb) ph.Permission.bluetoothAdvertise,
+        if (!kIsWeb) ph.Permission.bluetoothConnect,
+        if (!kIsWeb) ph.Permission.activityRecognition,
+        if (!kIsWeb) ph.Permission.scheduleExactAlarm,
+        ph.Permission.appTrackingTransparency,
       ];
 
       var updatedPermissions = PermissionsInfo.initial();
@@ -808,6 +922,18 @@ class AppStateManagerImpl
     if (permission == ph.Permission.sms) return PermissionType.sms;
     if (permission == ph.Permission.sensors) return PermissionType.sensors;
     if (permission == ph.Permission.bluetooth) return PermissionType.bluetooth;
+    if (permission == ph.Permission.bluetoothScan)
+      return PermissionType.bluetooth;
+    if (permission == ph.Permission.bluetoothAdvertise)
+      return PermissionType.bluetooth;
+    if (permission == ph.Permission.bluetoothConnect)
+      return PermissionType.bluetooth;
+    if (permission == ph.Permission.activityRecognition)
+      return PermissionType.activityRecognition;
+    if (permission == ph.Permission.scheduleExactAlarm)
+      return PermissionType.schedule;
+    if (permission == ph.Permission.appTrackingTransparency)
+      return PermissionType.appTrackingTransparency;
     return null;
   }
 
@@ -818,6 +944,172 @@ class AppStateManagerImpl
     if (status.isLimited) return PermissionStatus.limited;
     if (status.isPermanentlyDenied) return PermissionStatus.permanentlyDenied;
     return PermissionStatus.denied;
+  }
+
+  Future<void> _initializeOrientation() async {
+    try {
+      _updateOrientation();
+      _logger.info('Device orientation initialized');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize orientation',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _updateOrientation() {
+    try {
+      final view = WidgetsBinding.instance.platformDispatcher.views.first;
+      final size = view.physicalSize / view.devicePixelRatio;
+      final isPortrait = size.height >= size.width;
+      final orientationEnum = isPortrait
+          ? DeviceOrientation.portrait
+          : DeviceOrientation.landscape;
+
+      _deviceOrientationInfo = DeviceOrientationInfo(
+        currentOrientation: orientationEnum,
+        isPortrait: isPortrait,
+        isLandscape: !isPortrait,
+        timestamp: DateTime.now(),
+      );
+      _deviceOrientationController.add(_deviceOrientationInfo);
+    } catch (e) {
+      _logger.warning('Failed to update orientation: $e');
+    }
+  }
+
+  void _updateScreenMetrics() {
+    try {
+      final view = WidgetsBinding.instance.platformDispatcher.views.first;
+      final devicePixelRatio = view.devicePixelRatio;
+      final dpi = 96.0 * devicePixelRatio;
+
+      _screenMetricsInfo = ScreenMetricsInfo(
+        pixelRatio: devicePixelRatio,
+        dpi: dpi,
+        viewInsetTop: view.viewInsets.top,
+        viewInsetBottom: view.viewInsets.bottom,
+        viewInsetLeft: view.viewInsets.left,
+        viewInsetRight: view.viewInsets.right,
+        viewPaddingTop: view.viewPadding.top,
+        viewPaddingBottom: view.viewPadding.bottom,
+        viewPaddingLeft: view.viewPadding.left,
+        viewPaddingRight: view.viewPadding.right,
+        timestamp: DateTime.now(),
+      );
+      _screenMetricsController.add(_screenMetricsInfo);
+    } catch (e) {
+      _logger.warning('Failed to update screen metrics: $e');
+    }
+  }
+
+  Future<void> _initializeAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      _appVersionInfo = AppVersionInfo(
+        appName: packageInfo.appName,
+        version: packageInfo.version,
+        buildNumber: packageInfo.buildNumber,
+        packageName: packageInfo.packageName,
+        timestamp: DateTime.now(),
+      );
+      _appVersionController.add(_appVersionInfo);
+      _logger.info(
+        'App version info initialized: ${_appVersionInfo.version}+${_appVersionInfo.buildNumber}',
+      );
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize app version',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _initializeStorageInfo() async {
+    try {
+      // Note: storage info implementation would require additional packages
+      // For now, we initialize with default values
+      _storageInfo = StorageInfo.initial();
+      _storageController.add(_storageInfo);
+      _logger.info('Storage info initialized');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize storage info',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _initializeScreenMetrics() async {
+    try {
+      _updateScreenMetrics();
+      _logger.info('Screen metrics initialized');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize screen metrics',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _initializeWiFiInfo() async {
+    try {
+      final connectivityResult = await _connectivity.checkConnectivity();
+
+      if (connectivityResult == ConnectivityResult.wifi) {
+        _wifiInfo = WiFiInfo(
+          isConnected: true,
+          ssid: 'Connected',
+          signalStrength: -50,
+          timestamp: DateTime.now(),
+        );
+      } else {
+        _wifiInfo = WiFiInfo.initial();
+      }
+
+      _wifiController.add(_wifiInfo);
+      _logger.info('WiFi info initialized: connected=${_wifiInfo.isConnected}');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize WiFi info',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _wifiInfo = WiFiInfo.initial();
+      _wifiController.add(_wifiInfo);
+    }
+  }
+
+  Future<void> _initializeSystemSettings() async {
+    try {
+      // Check if dark mode is enabled from platform
+      final brightness =
+          WidgetsBinding.instance.platformDispatcher.platformBrightness;
+      final isDarkMode = brightness == Brightness.dark;
+
+      _systemSettingsInfo = SystemSettingsInfo(
+        isLowPowerMode: false, // Would need platform-specific implementation
+        isAirplaneMode: false, // Would need platform-specific implementation
+        isDarkModeEnabled: isDarkMode,
+        timestamp: DateTime.now(),
+      );
+
+      _systemSettingsController.add(_systemSettingsInfo);
+      _logger.info('System settings initialized: darkMode=$isDarkMode');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize system settings',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _systemSettingsInfo = SystemSettingsInfo.initial();
+      _systemSettingsController.add(_systemSettingsInfo);
+    }
   }
 
   @override
@@ -838,6 +1130,15 @@ class AppStateManagerImpl
     await _accessibilityController.close();
     await _memoryController.close();
     await _permissionsController.close();
+    await _deviceOrientationController.close();
+    await _appVersionController.close();
+    await _storageController.close();
+    await _systemSettingsController.close();
+    await _screenMetricsController.close();
+    await _vpnController.close();
+    await _wifiController.close();
+    await _audioStateController.close();
+    await _appRuntimeController.close();
 
     _isInitialized = false;
     _logger.info('AppStateManager disposed');
@@ -854,6 +1155,15 @@ class AppStateManagerImpl
       'memoryInfo': _memoryInfo.toMap(),
       'permissionsInfo': _permissionsInfo.toJson(),
       'deviceInfo': _deviceInfo_?.toMap(),
+      'deviceOrientationInfo': _deviceOrientationInfo.toMap(),
+      'appVersionInfo': _appVersionInfo.toMap(),
+      'storageInfo': _storageInfo.toMap(),
+      'systemSettingsInfo': _systemSettingsInfo.toMap(),
+      'screenMetricsInfo': _screenMetricsInfo.toMap(),
+      'vpnInfo': _vpnInfo.toMap(),
+      'wifiInfo': _wifiInfo.toMap(),
+      'audioStateInfo': _audioStateInfo.toMap(),
+      'appRuntimeInfo': _appRuntimeInfo.toMap(),
       'navigationState': _navigationState.toMap(),
       'authInfo': _authInfo.toMap(),
       'themeMode': _themeMode.name,
