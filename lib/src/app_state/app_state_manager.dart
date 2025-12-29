@@ -11,6 +11,7 @@ import 'models/battery_info.dart';
 import 'models/network_info.dart';
 import 'models/accessibility_info.dart';
 import 'models/memory_info.dart';
+import 'models/permissions_info.dart';
 import '../core/interfaces/service_interface.dart';
 
 /// Centralized application state management service.
@@ -84,6 +85,9 @@ abstract class AppStateManager implements ServiceInterface {
   /// Current memory pressure information.
   MemoryInfo? get memoryInfo;
 
+  /// Current permissions information.
+  PermissionsInfo get permissionsInfo;
+
   /// Stream of application lifecycle state changes.
   ///
   /// Emits a new [AppStateInfo] whenever the app lifecycle, focus, or
@@ -143,6 +147,11 @@ abstract class AppStateManager implements ServiceInterface {
   /// Emits a new [AuthInfo] whenever authentication state changes.
   Stream<AuthInfo> get authStream;
 
+  /// Stream of permissions changes.
+  ///
+  /// Emits a new [PermissionsInfo] whenever permissions are updated.
+  Stream<PermissionsInfo> get permissionsStream;
+
   /// Updates the navigation state with a new route.
   ///
   /// [route] is the new route path. [params] are optional route parameters.
@@ -188,6 +197,20 @@ abstract class AppStateManager implements ServiceInterface {
   ///
   /// Allows updating complete [AuthInfo] object for complex auth state changes.
   void updateAuthInfo(AuthInfo authInfo);
+
+  /// Updates permission status for a specific permission type.
+  ///
+  /// [permissionInfo] contains the updated permission status.
+  ///
+  /// The permissions state is updated and broadcast via [permissionsStream].
+  void updatePermission(PermissionInfo permissionInfo);
+
+  /// Updates multiple permissions at once.
+  ///
+  /// [permissions] is a list of [PermissionInfo] objects to update.
+  ///
+  /// The permissions state is updated and broadcast via [permissionsStream].
+  void updatePermissions(List<PermissionInfo> permissions);
 
   /// Returns a complete snapshot of all application state.
   ///

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 
 class SimpleAppStateExample extends StatefulWidget {
-  const SimpleAppStateExample({Key? key}) : super(key: key);
+  const SimpleAppStateExample({super.key});
 
   @override
   State<SimpleAppStateExample> createState() => _SimpleAppStateExampleState();
@@ -29,53 +29,30 @@ class _SimpleAppStateExampleState extends State<SimpleAppStateExample> {
 
   void _setupStateListeners() {
     appStateManager.stateStream.listen((state) {
-      print('📱 App State: ${state.lifecycle.name}');
-      print(
-        '   Focus: ${state.focus.name}, Online: ${state.connectivity.name}',
-      );
     });
 
     appStateManager.deviceStream.listen((device) {
-      print(
-        '📱 Device: ${device.type.name} - ${device.screenWidth}x${device.screenHeight}',
-      );
-      print(
-        '   Orientation: ${device.orientation.name}, Breakpoint: ${device.breakpoint.name}',
-      );
     });
 
     appStateManager.keyboardStream.listen((keyboard) {
-      print(
-        '⌨️ Keyboard: ${keyboard.isVisible ? 'Visible' : 'Hidden'} (${keyboard.height.toStringAsFixed(0)}px)',
-      );
     });
 
     appStateManager.batteryStream.listen((battery) {
-      print(
-        '🔋 Battery: ${battery.batteryLevel}% - ${battery.batteryState.name}',
-      );
-      if (battery.isLowBattery) print('   ⚠️ Low Battery!');
     });
 
     appStateManager.networkStream.listen((network) {
-      print(
-        '📡 Network: ${network.type.name} - ${network.isOnline ? 'Online' : 'Offline'}',
-      );
     });
 
     appStateManager.memoryStream.listen((memory) {
-      print('💾 Memory: ${memory.pressureLevel.name}');
-      if (memory.shouldReduceMemoryUsage) print('   ⚠️ Reduce Memory Usage!');
     });
 
     appStateManager.accessibilityStream.listen((a11y) {
-      if (a11y.hasAccessibilityFeatures) {
-        print('♿ Accessibility: ${a11y.textScaleFactor}x scale');
-      }
     });
 
     appStateManager.authStream.listen((auth) {
-      print('🔐 Auth: ${auth.status.name}');
+    });
+
+    appStateManager.permissionsStream.listen((permissions) {
     });
   }
 

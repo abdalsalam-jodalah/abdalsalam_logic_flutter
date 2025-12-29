@@ -254,7 +254,81 @@ final auth = appStateManager.authInfo;
 if (auth.isAuthenticated) {
   print('User: ${auth.userEmail}');
 }
+
+// Get permissions info
+final permissions = appStateManager.permissionsInfo;
+if (permissions.isGranted(PermissionType.camera)) {
+  // Camera is allowed
+}
+if (permissions.isPermanentlyDenied(PermissionType.location)) {
+  // Location is permanently denied
+}
 ```
+
+#### Permission Management
+
+The app state manager provides comprehensive permission tracking for 25+ common Android/iOS permissions:
+
+**Available Permission Types:**
+- Camera, Microphone
+- Location (including locationAlways, locationWhenInUse)
+- Calendar, Contacts
+- Photos, Videos, Storage, Documents, Downloads
+- Notifications, Phone, SMS
+- Sensors, Activity Recognition
+- Bluetooth, Schedule
+- App Tracking Transparency
+- Media Library, Reminders, Speech Recognition
+
+**Permission Status:**
+- `granted` - Permission is allowed
+- `denied` - Permission is denied
+- `restricted` - Permission is restricted by OS
+- `limited` - Permission is limited (iOS 14+)
+- `permanentlyDenied` - User denied and disabled "Ask Again"
+- `provisional` - Provisional permission granted
+
+**Usage:**
+
+```dart
+// Listen to permission changes
+appStateManager.permissionsStream.listen((permissions) {
+  if (permissions.isGranted(PermissionType.camera)) {
+    // Start camera feature
+  }
+  
+  if (permissions.isPermanentlyDenied(PermissionType.location)) {
+    // Show app settings prompt to user
+  }
+});
+
+// Update single permission
+appStateManager.updatePermission(
+  PermissionInfo.granted(PermissionType.microphone),
+);
+
+// Update multiple permissions
+appStateManager.updatePermissions([
+  PermissionInfo.granted(PermissionType.camera),
+  PermissionInfo.granted(PermissionType.location),
+  PermissionInfo.denied(PermissionType.contacts),
+]);
+
+// Query permissions
+final permissions = appStateManager.permissionsInfo;
+if (permissions.isGranted(PermissionType.location)) {
+  // Location is available
+}
+
+// Get all permissions by status
+final grantedPerms = permissions.getGrantedPermissions();
+final deniedPerms = permissions.getDeniedPermissions();
+final permaDeniedPerms = permissions.getPermanentlyDeniedPermissions();
+```
+
+#### Getting Full State Snapshot
+
+```dart
 
 #### Getting Full State Snapshot
 

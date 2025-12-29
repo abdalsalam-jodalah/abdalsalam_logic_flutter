@@ -19,6 +19,7 @@ export 'src/app_state/models/battery_info.dart';
 export 'src/app_state/models/network_info.dart';
 export 'src/app_state/models/accessibility_info.dart';
 export 'src/app_state/models/memory_info.dart';
+export 'src/app_state/models/permissions_info.dart';
 
 export 'src/app_initialization/app_initializer.dart';
 export 'src/app_initialization/app_initializer_impl.dart';

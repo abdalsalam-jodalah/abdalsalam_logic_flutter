@@ -16,6 +16,7 @@ import 'models/battery_info.dart';
 import 'models/network_info.dart';
 import 'models/accessibility_info.dart';
 import 'models/memory_info.dart';
+import 'models/permissions_info.dart';
 import '../logging/logger_service.dart';
 
 class AppStateManagerImpl
@@ -74,6 +75,7 @@ class AppStateManagerImpl
     pressureLevel: MemoryPressureLevel.normal,
     timestamp: DateTime.now(),
   );
+  PermissionsInfo _permissionsInfo = PermissionsInfo.initial();
 
   double _previousKeyboardHeight = 0.0;
 
@@ -98,6 +100,8 @@ class AppStateManagerImpl
   final StreamController<AccessibilityInfo> _accessibilityController =
       StreamController.broadcast();
   final StreamController<MemoryInfo> _memoryController =
+      StreamController.broadcast();
+  final StreamController<PermissionsInfo> _permissionsController =
       StreamController.broadcast();
 
   @override
@@ -135,6 +139,10 @@ class AppStateManagerImpl
   Stream<MemoryInfo> get memoryStream => _memoryController.stream;
 
   @override
+  Stream<PermissionsInfo> get permissionsStream =>
+      _permissionsController.stream;
+
+  @override
   lifecycle.AppStateInfo get currentState => _currentState;
   @override
   KeyboardInfo? get keyboardInfo => _keyboardInfo;
@@ -150,6 +158,9 @@ class AppStateManagerImpl
 
   @override
   MemoryInfo? get memoryInfo => _memoryInfo;
+
+  @override
+  PermissionsInfo get permissionsInfo => _permissionsInfo;
 
   @override
   models.DeviceInfo? get deviceInfo => _deviceInfo_;
@@ -595,6 +606,22 @@ class AppStateManagerImpl
   }
 
   @override
+  void updatePermission(PermissionInfo permissionInfo) {
+    _permissionsInfo = _permissionsInfo.updatePermission(permissionInfo);
+    _permissionsController.add(_permissionsInfo);
+    _logger.info(
+      'Permission updated: ${permissionInfo.type.name} - ${permissionInfo.status.name}',
+    );
+  }
+
+  @override
+  void updatePermissions(List<PermissionInfo> permissions) {
+    _permissionsInfo = _permissionsInfo.updatePermissions(permissions);
+    _permissionsController.add(_permissionsInfo);
+    _logger.info('Permissions updated: ${permissions.length} permission(s)');
+  }
+
+  @override
   void setAuthenticated(dynamic user, String accessToken) {
     _authInfo = _authInfo.copyWith(
       status: AppAuthStatus.authenticated,
@@ -707,6 +734,7 @@ class AppStateManagerImpl
     await _networkController.close();
     await _accessibilityController.close();
     await _memoryController.close();
+    await _permissionsController.close();
 
     _isInitialized = false;
     _logger.info('AppStateManager disposed');
@@ -721,6 +749,7 @@ class AppStateManagerImpl
       'networkInfo': _networkInfo?.toMap(),
       'accessibilityInfo': _accessibilityInfo?.toMap(),
       'memoryInfo': _memoryInfo.toMap(),
+      'permissionsInfo': _permissionsInfo.toJson(),
       'deviceInfo': _deviceInfo_?.toMap(),
       'navigationState': _navigationState.toMap(),
       'authInfo': _authInfo.toMap(),
