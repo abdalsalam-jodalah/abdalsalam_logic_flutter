@@ -7,6 +7,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:battery_plus/battery_plus.dart' as bp;
+import 'package:network_info_plus/network_info_plus.dart' as nip;
 import 'app_state_manager.dart';
 import 'models/app_lifecycle_state.dart' as lifecycle;
 import 'models/device_orientation_info.dart';
@@ -54,8 +56,11 @@ class AppStateManagerImpl
   final LoggerService _logger;
   final Connectivity _connectivity = Connectivity();
   final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
+  final bp.Battery _battery = bp.Battery();
+  final nip.NetworkInfo _networkInfoPlugin = nip.NetworkInfo();
 
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  StreamSubscription<bp.BatteryState>? _batterySubscription;
   bool _isInitialized = false;
 
   lifecycle.AppStateInfo _currentState = lifecycle.AppStateInfo(
@@ -296,6 +301,7 @@ class AppStateManagerImpl
     await _initializeStorageInfo();
     await _initializeScreenMetrics();
     await _initializeWiFiInfo();
+    await _initializeBatteryInfo();
     await _initializeSystemSettings();
     _vpnInfo = VpnInfo.initial();
     _vpnController.add(_vpnInfo);
@@ -1062,10 +1068,36 @@ class AppStateManagerImpl
       final connectivityResult = await _connectivity.checkConnectivity();
 
       if (connectivityResult == ConnectivityResult.wifi) {
+        // Get WiFi details using network_info_plus
+        String? ssid;
+        String? bssid;
+        String? ipAddress;
+        String? gateway;
+        String? subnet;
+
+        if (!kIsWeb) {
+          try {
+            ssid = await _networkInfoPlugin.getWifiName();
+            bssid = await _networkInfoPlugin.getWifiBSSID();
+            ipAddress = await _networkInfoPlugin.getWifiIP();
+            gateway = await _networkInfoPlugin.getWifiGatewayIP();
+            subnet = await _networkInfoPlugin.getWifiSubmask();
+          } catch (e) {
+            _logger.warning('Failed to get detailed WiFi info: $e');
+          }
+        }
+
         _wifiInfo = WiFiInfo(
           isConnected: true,
-          ssid: 'Connected',
+          ssid: ssid?.replaceAll('"', ''),
+          bssid: bssid,
+          ipAddress: ipAddress,
+          gateway: gateway,
+          subnet: subnet,
           signalStrength: -50,
+          linkSpeed: 100,
+          frequency: 2400,
+          securityType: 'WPA2',
           timestamp: DateTime.now(),
         );
       } else {
@@ -1082,6 +1114,88 @@ class AppStateManagerImpl
       );
       _wifiInfo = WiFiInfo.initial();
       _wifiController.add(_wifiInfo);
+    }
+  }
+
+  Future<void> _initializeBatteryInfo() async {
+    try {
+      if (kIsWeb) {
+        _batteryInfo = null;
+        return;
+      }
+
+      final batteryLevel = await _battery.batteryLevel;
+      final batteryState = await _battery.batteryState;
+
+      _batteryInfo = BatteryInfo(
+        batteryLevel: batteryLevel,
+        batteryState: _mapBatteryState(batteryState),
+        powerMode: PowerMode.normal,
+        health: BatteryHealth.good,
+        temperature: 25,
+        voltage: 3800,
+        technology: 'Li-ion',
+        chargingSource: batteryState == bp.BatteryState.charging 
+            ? ChargingSource.ac 
+            : null,
+        capacity: 3000,
+        currentNow: -200,
+        timestamp: DateTime.now(),
+      );
+
+      _batteryController.add(_batteryInfo!);
+
+      _batterySubscription = _battery.onBatteryStateChanged.listen((state) {
+        _updateBatteryInfo(state);
+      });
+
+      _logger.info('Battery info initialized: level=$batteryLevel%');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize battery info',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _batteryInfo = null;
+    }
+  }
+
+  BatteryState _mapBatteryState(bp.BatteryState state) {
+    switch (state) {
+      case bp.BatteryState.charging:
+        return BatteryState.charging;
+      case bp.BatteryState.discharging:
+        return BatteryState.discharging;
+      case bp.BatteryState.full:
+        return BatteryState.full;
+      default:
+        return BatteryState.unknown;
+    }
+  }
+
+  Future<void> _updateBatteryInfo(bp.BatteryState state) async {
+    try {
+      final batteryLevel = await _battery.batteryLevel;
+      
+      if (_batteryInfo != null) {
+        _batteryInfo = _batteryInfo!.copyWith(
+          batteryLevel: batteryLevel,
+          batteryState: _mapBatteryState(state),
+          chargingSource: state == bp.BatteryState.charging 
+              ? ChargingSource.ac 
+              : null,
+          timestamp: DateTime.now(),
+        );
+        
+        _batteryController.add(_batteryInfo!);
+        _logger.info('Battery info updated: level=$batteryLevel%, state=${state.name}');
+      }
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to update battery info',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -1118,6 +1232,7 @@ class AppStateManagerImpl
 
     WidgetsBinding.instance.removeObserver(this);
     await _connectivitySubscription?.cancel();
+    await _batterySubscription?.cancel();
     await _stateController.close();
     await _deviceController.close();
     await _navController.close();

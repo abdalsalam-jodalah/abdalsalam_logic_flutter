@@ -238,10 +238,26 @@ class _BatterySection extends StatelessWidget {
             ),
             _StateRow('State', battery.batteryState.name),
             _StateRow('Charging', battery.isCharging ? '⚡ Yes' : '❌ No'),
+            if (battery.chargingSource != null)
+              _StateRow('Charging Source', battery.chargingSource!.name.toUpperCase()),
             _StateRow(
               'Power Mode',
               battery.isLowPowerMode ? '🔴 Low Power' : '🟢 Normal',
             ),
+            if (battery.health != null) ...[
+              _StateRow('Health', battery.health!.name),
+              _StateRow('Health Status', battery.healthStatus),
+            ],
+            if (battery.temperature != null)
+              _StateRow('Temperature', '${battery.temperatureCelsius}°C'),
+            if (battery.voltage != null)
+              _StateRow('Voltage', '${battery.voltageVolts}V'),
+            if (battery.technology != null)
+              _StateRow('Technology', battery.technology!),
+            if (battery.capacity != null)
+              _StateRow('Capacity', '${battery.capacity} mAh'),
+            if (battery.currentNow != null)
+              _StateRow('Current', '${(battery.currentNow! / 1000).toStringAsFixed(1)} mA'),
             if (battery.isLowBattery)
               _StateRow('⚠️ Alert', 'Low battery detected'),
             if (battery.isCriticalBattery)
@@ -585,9 +601,20 @@ class _WiFiSection extends StatelessWidget {
             _StateRow('Connected', wifi.isConnected ? '✅ Yes' : '❌ No'),
             if (wifi.ssid != null) _StateRow('SSID', wifi.ssid!),
             if (wifi.bssid != null) _StateRow('BSSID', wifi.bssid!),
+            if (wifi.ipAddress != null) _StateRow('IP Address', wifi.ipAddress!),
+            if (wifi.gateway != null) _StateRow('Gateway', wifi.gateway!),
+            if (wifi.subnet != null) _StateRow('Subnet', wifi.subnet!),
             if (wifi.signalStrength != null)
               _StateRow('Signal Strength', '${wifi.signalStrength} dBm'),
             _StateRow('Signal Quality', wifi.signalQuality),
+            if (wifi.linkSpeed != null)
+              _StateRow('Link Speed', '${wifi.linkSpeed} Mbps'),
+            if (wifi.frequency != null) ...[
+              _StateRow('Frequency', '${wifi.frequency} MHz'),
+              _StateRow('Band', wifi.frequencyBand),
+            ],
+            if (wifi.securityType != null)
+              _StateRow('Security', wifi.securityType!),
             _StateRow('Timestamp', _formatTime(wifi.timestamp)),
           ],
         );
