@@ -14,6 +14,12 @@ Context:
 - **Platforms**: Android, iOS, Windows, macOS, Linux, Web
 - **Package Modules**: App initialization, state management, networking, storage, auth, error handling, logging, sync, prefetch, and utility services
 - **Design Philosophy**: Logic-only package; UI/widgets only if directly related to core logic functionality
+- **Modular Architecture**: **CRITICAL** - Features are opt-in and only initialized if explicitly requested by the client app. This ensures:
+  - Zero unnecessary dependencies bundled into the app
+  - No permissions requested for unused features
+  - App store compliance (only request permissions for features actually used)
+  - Minimal app size and resource usage
+  - Each feature module can be independently enabled/disabled via configuration
 - **Reference**: See `_base_logic_summary.md` for implementation patterns and architecture decisions from a production app using similar logic
 
 You will see now **files structure then important rules then implementation guidance**
@@ -190,6 +196,13 @@ The `_base_logic_summary.md` file contains production-tested patterns from a rea
 4. **Performance**: Lazy loading, caching, efficient queries
 5. **Platform Awareness**: Conditional code for mobile vs desktop
 6. **Reactive Updates**: Streams for state changes, not polling
+7. **Modular Initialization**: **CRITICAL** - Every feature/service must:
+   - Be configurable via an opt-in flag in initialization config
+   - Only initialize its dependencies when explicitly enabled
+   - Only request platform permissions when actually used
+   - Be independently testable and removable
+   - Have zero impact on app when disabled (no bundled code, no permissions)
+   - Example: If client doesn't enable battery monitoring, the battery_plus dependency and permissions should not be included
 
 **Sixth: What This Package IS and IS NOT:**
 

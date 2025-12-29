@@ -12,6 +12,7 @@ import 'package:network_info_plus/network_info_plus.dart' as nip;
 import 'package:disk_space_plus/disk_space_plus.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'app_state_manager.dart';
+import 'app_state_config.dart';
 import 'models/app_lifecycle_state.dart' as lifecycle;
 import 'models/device_orientation_info.dart';
 import 'models/app_version_info.dart';
@@ -39,12 +40,17 @@ class AppStateManagerImpl
     implements AppStateManager {
   static AppStateManagerImpl? _instance;
 
-  factory AppStateManagerImpl.create(LoggerService logger) {
-    _instance ??= AppStateManagerImpl._internal(logger);
+  factory AppStateManagerImpl.create(
+    LoggerService logger, {
+    AppStateConfig? config,
+  }) {
+    _instance ??= AppStateManagerImpl._internal(logger, config ?? const AppStateConfig());
     return _instance!;
   }
 
-  AppStateManagerImpl._internal(this._logger);
+  AppStateManagerImpl._internal(this._logger, this._config);
+
+  final AppStateConfig _config;
 
   static AppStateManagerImpl get instance {
     if (_instance == null) {
@@ -219,50 +225,66 @@ class AppStateManagerImpl
 
   @override
   lifecycle.AppStateInfo get currentState => _currentState;
+  
   @override
-  KeyboardInfo? get keyboardInfo => _keyboardInfo;
+  KeyboardInfo? get keyboardInfo => 
+      _config.enableKeyboard ? _keyboardInfo : null;
 
   @override
-  BatteryInfo? get batteryInfo => _batteryInfo;
+  BatteryInfo? get batteryInfo => 
+      _config.enableBattery ? _batteryInfo : null;
 
   @override
-  NetworkInfo? get networkInfo => _networkInfo;
+  NetworkInfo? get networkInfo => 
+      _config.enableNetworkType ? _networkInfo : null;
 
   @override
-  AccessibilityInfo? get accessibilityInfo => _accessibilityInfo;
+  AccessibilityInfo? get accessibilityInfo => 
+      _config.enableAccessibility ? _accessibilityInfo : null;
 
   @override
-  MemoryInfo? get memoryInfo => _memoryInfo;
+  MemoryInfo? get memoryInfo => 
+      _config.enableMemory ? _memoryInfo : null;
 
   @override
-  PermissionsInfo get permissionsInfo => _permissionsInfo;
+  PermissionsInfo get permissionsInfo => 
+      _config.enablePermissions ? _permissionsInfo : PermissionsInfo.initial();
 
   @override
-  DeviceOrientationInfo get deviceOrientationInfo => _deviceOrientationInfo;
+  DeviceOrientationInfo get deviceOrientationInfo => 
+      _config.enableOrientation ? _deviceOrientationInfo : DeviceOrientationInfo.initial();
 
   @override
-  AppVersionInfo get appVersionInfo => _appVersionInfo;
+  AppVersionInfo get appVersionInfo => 
+      _config.enableAppVersion ? _appVersionInfo : AppVersionInfo.initial();
 
   @override
-  StorageInfo get storageInfo => _storageInfo;
+  StorageInfo get storageInfo => 
+      _config.enableStorage ? _storageInfo : StorageInfo.initial();
 
   @override
-  SystemSettingsInfo get systemSettingsInfo => _systemSettingsInfo;
+  SystemSettingsInfo get systemSettingsInfo => 
+      _config.enableSystemSettings ? _systemSettingsInfo : SystemSettingsInfo.initial();
 
   @override
-  ScreenMetricsInfo get screenMetricsInfo => _screenMetricsInfo;
+  ScreenMetricsInfo get screenMetricsInfo => 
+      _config.enableScreenMetrics ? _screenMetricsInfo : ScreenMetricsInfo.initial();
 
   @override
-  VpnInfo get vpnInfo => _vpnInfo;
+  VpnInfo get vpnInfo => 
+      _config.enableVPN ? _vpnInfo : VpnInfo.initial();
 
   @override
-  WiFiInfo get wifiInfo => _wifiInfo;
+  WiFiInfo get wifiInfo => 
+      _config.enableWiFi ? _wifiInfo : WiFiInfo.initial();
 
   @override
-  AudioStateInfo get audioStateInfo => _audioStateInfo;
+  AudioStateInfo get audioStateInfo => 
+      _config.enableAudio ? _audioStateInfo : AudioStateInfo.initial();
 
   @override
-  AppRuntimeInfo get appRuntimeInfo => _appRuntimeInfo;
+  AppRuntimeInfo get appRuntimeInfo => 
+      _config.enableAppRuntime ? _appRuntimeInfo : AppRuntimeInfo.initial();
 
   @override
   models.DeviceInfo? get deviceInfo => _deviceInfo_;
@@ -288,31 +310,44 @@ class AppStateManagerImpl
       return;
     }
 
-    _logger.info('Initializing AppStateManager');
+    _logger.info('Initializing AppStateManager with config: $_config');
 
     WidgetsBinding.instance.addObserver(this);
 
-    await _initializeDeviceInfo();
-    await _initializeConnectivity();
+    // Core features (always initialized if enabled)
+    if (_config.enableDeviceInfo) await _initializeDeviceInfo();
+    if (_config.enableConnectivity) await _initializeConnectivity();
     await _initializeLocale();
-    _initializeAccessibilityInfo();
-    _initializeNetworkInfo();
-    await _initializePermissions();
-    await _initializeOrientation();
-    await _initializeAppVersion();
-    await _initializeStorageInfo();
-    await _initializeScreenMetrics();
-    await _initializeWiFiInfo();
-    await _initializeBatteryInfo();
-    await _initializeAudioState();
-    await _initializeMemoryInfo();
-    await _initializeSystemSettings();
-    _vpnInfo = VpnInfo.initial();
-    _vpnController.add(_vpnInfo);
-    _appRuntimeInfo = AppRuntimeInfo.initial();
-    _appRuntimeController.add(_appRuntimeInfo);
+    
+    // Optional features (only initialized if enabled)
+    if (_config.enableAccessibility) _initializeAccessibilityInfo();
+    if (_config.enableNetworkType) _initializeNetworkInfo();
+    if (_config.enablePermissions) await _initializePermissions();
+    if (_config.enableOrientation) await _initializeOrientation();
+    if (_config.enableAppVersion) await _initializeAppVersion();
+    if (_config.enableStorage) await _initializeStorageInfo();
+    if (_config.enableScreenMetrics) await _initializeScreenMetrics();
+    if (_config.enableWiFi) await _initializeWiFiInfo();
+    if (_config.enableBattery) await _initializeBatteryInfo();
+    if (_config.enableAudio) await _initializeAudioState();
+    if (_config.enableMemory) await _initializeMemoryInfo();
+    if (_config.enableSystemSettings) await _initializeSystemSettings();
+    
+    // Initialize VPN info if enabled
+    if (_config.enableVPN) {
+      _vpnInfo = VpnInfo.initial();
+      _vpnController.add(_vpnInfo);
+    }
+    
+    // Initialize app runtime if enabled
+    if (_config.enableAppRuntime) {
+      _appRuntimeInfo = AppRuntimeInfo.initial();
+      _appRuntimeController.add(_appRuntimeInfo);
+    }
 
-    _updateState(lifecycle.AppLifecycleState.appInit);
+    if (_config.enableAppLifecycle) {
+      _updateState(lifecycle.AppLifecycleState.appInit);
+    }
 
     _isInitialized = true;
     _logger.info('AppStateManager initialized successfully');

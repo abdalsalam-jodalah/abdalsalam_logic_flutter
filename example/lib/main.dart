@@ -6,7 +6,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   final logger = LoggerServiceImpl();
-  final appStateManager = AppStateManagerImpl.create(logger);
+  
+  // Create config with all features enabled for demo purposes
+  // In production, only enable features you actually need
+  const config = AppStateConfig.all();
+  
+  final appStateManager = AppStateManagerImpl.create(logger, config: config);
   await appStateManager.initialize();
   
   runApp(MyApp(appStateManager: appStateManager));
