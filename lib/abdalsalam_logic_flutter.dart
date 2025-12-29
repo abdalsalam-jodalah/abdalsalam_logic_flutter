@@ -19,6 +19,7 @@ export 'src/app_state/models/system_settings_info.dart';
 export 'src/app_state/models/screen_metrics_info.dart';
 export 'src/app_state/models/vpn_info.dart';
 export 'src/app_state/models/wifi_info.dart';
+export 'src/app_state/models/mobile_data_info.dart';
 export 'src/app_state/models/audio_state_info.dart';
 export 'src/app_state/models/app_runtime_info.dart';
 export 'src/app_state/models/navigation_state.dart';

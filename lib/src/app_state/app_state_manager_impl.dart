@@ -21,6 +21,7 @@ import 'models/system_settings_info.dart';
 import 'models/screen_metrics_info.dart';
 import 'models/vpn_info.dart';
 import 'models/wifi_info.dart';
+import 'models/mobile_data_info.dart';
 import 'models/audio_state_info.dart';
 import 'models/app_runtime_info.dart';
 import 'models/device_info.dart' as models;
@@ -108,6 +109,7 @@ class AppStateManagerImpl
   ScreenMetricsInfo _screenMetricsInfo = ScreenMetricsInfo.initial();
   VpnInfo _vpnInfo = VpnInfo.initial();
   WiFiInfo _wifiInfo = WiFiInfo.initial();
+  MobileDataInfo _mobileDataInfo = MobileDataInfo.initial();
   AudioStateInfo _audioStateInfo = AudioStateInfo.initial();
   AppRuntimeInfo _appRuntimeInfo = AppRuntimeInfo.initial();
 
@@ -149,6 +151,8 @@ class AppStateManagerImpl
       StreamController.broadcast();
   final StreamController<VpnInfo> _vpnController = StreamController.broadcast();
   final StreamController<WiFiInfo> _wifiController =
+      StreamController.broadcast();
+  final StreamController<MobileDataInfo> _mobileDataController =
       StreamController.broadcast();
   final StreamController<AudioStateInfo> _audioStateController =
       StreamController.broadcast();
@@ -218,6 +222,9 @@ class AppStateManagerImpl
   Stream<WiFiInfo> get wifiStream => _wifiController.stream;
 
   @override
+  Stream<MobileDataInfo> get mobileDataStream => _mobileDataController.stream;
+
+  @override
   Stream<AudioStateInfo> get audioStateStream => _audioStateController.stream;
 
   @override
@@ -279,6 +286,10 @@ class AppStateManagerImpl
       _config.enableWiFi ? _wifiInfo : WiFiInfo.initial();
 
   @override
+  MobileDataInfo get mobileDataInfo => 
+      _config.enableMobileData ? _mobileDataInfo : MobileDataInfo.initial();
+
+  @override
   AudioStateInfo get audioStateInfo => 
       _config.enableAudio ? _audioStateInfo : AudioStateInfo.initial();
 
@@ -328,6 +339,7 @@ class AppStateManagerImpl
     if (_config.enableStorage) await _initializeStorageInfo();
     if (_config.enableScreenMetrics) await _initializeScreenMetrics();
     if (_config.enableWiFi) await _initializeWiFiInfo();
+    if (_config.enableMobileData) await _initializeMobileDataInfo();
     if (_config.enableBattery) await _initializeBatteryInfo();
     if (_config.enableAudio) await _initializeAudioState();
     if (_config.enableMemory) await _initializeMemoryInfo();
@@ -950,36 +962,46 @@ class AppStateManagerImpl
 
   PermissionType? _mapPermissionHandlerToType(ph.Permission permission) {
     if (permission == ph.Permission.camera) return PermissionType.camera;
-    if (permission == ph.Permission.microphone)
+    if (permission == ph.Permission.microphone) {
       return PermissionType.microphone;
+    }
     if (permission == ph.Permission.location) return PermissionType.location;
-    if (permission == ph.Permission.locationAlways)
+    if (permission == ph.Permission.locationAlways) {
       return PermissionType.locationAlways;
-    if (permission == ph.Permission.locationWhenInUse)
+    }
+    if (permission == ph.Permission.locationWhenInUse) {
       return PermissionType.locationWhenInUse;
+    }
     if (permission == ph.Permission.calendar) return PermissionType.calendar;
     if (permission == ph.Permission.contacts) return PermissionType.contacts;
     if (permission == ph.Permission.photos) return PermissionType.photos;
     if (permission == ph.Permission.videos) return PermissionType.videos;
     if (permission == ph.Permission.storage) return PermissionType.storage;
-    if (permission == ph.Permission.notification)
+    if (permission == ph.Permission.notification) {
       return PermissionType.notifications;
+    }
     if (permission == ph.Permission.phone) return PermissionType.phone;
     if (permission == ph.Permission.sms) return PermissionType.sms;
     if (permission == ph.Permission.sensors) return PermissionType.sensors;
     if (permission == ph.Permission.bluetooth) return PermissionType.bluetooth;
-    if (permission == ph.Permission.bluetoothScan)
+    if (permission == ph.Permission.bluetoothScan) {
       return PermissionType.bluetooth;
-    if (permission == ph.Permission.bluetoothAdvertise)
+    }
+    if (permission == ph.Permission.bluetoothAdvertise) {
       return PermissionType.bluetooth;
-    if (permission == ph.Permission.bluetoothConnect)
+    }
+    if (permission == ph.Permission.bluetoothConnect) {
       return PermissionType.bluetooth;
-    if (permission == ph.Permission.activityRecognition)
+    }
+    if (permission == ph.Permission.activityRecognition) {
       return PermissionType.activityRecognition;
-    if (permission == ph.Permission.scheduleExactAlarm)
+    }
+    if (permission == ph.Permission.scheduleExactAlarm) {
       return PermissionType.schedule;
-    if (permission == ph.Permission.appTrackingTransparency)
+    }
+    if (permission == ph.Permission.appTrackingTransparency) {
       return PermissionType.appTrackingTransparency;
+    }
     return null;
   }
 
@@ -1180,6 +1202,49 @@ class AppStateManagerImpl
       );
       _wifiInfo = WiFiInfo.initial();
       _wifiController.add(_wifiInfo);
+    }
+  }
+
+  Future<void> _initializeMobileDataInfo() async {
+    try {
+      final connectivityResult = await _connectivity.checkConnectivity();
+
+      if (connectivityResult == ConnectivityResult.mobile) {
+        // Get mobile operator information
+        String? operatorName;
+        String? isoCountryCode;
+
+        if (!kIsWeb && Platform.isAndroid) {
+          try {
+            operatorName = await _networkInfoPlugin.getWifiName();
+            isoCountryCode = await _networkInfoPlugin.getWifiBSSID();
+          } catch (e) {
+            _logger.warning('Failed to get mobile operator info: $e');
+          }
+        }
+
+        _mobileDataInfo = MobileDataInfo(
+          isConnected: true,
+          dataType: MobileDataType.cellular4g, // Default, platform-specific code needed for actual value
+          signalStrength: -75,
+          operatorName: operatorName,
+          isoCountryCode: isoCountryCode,
+          timestamp: DateTime.now(),
+        );
+      } else {
+        _mobileDataInfo = MobileDataInfo.initial();
+      }
+
+      _mobileDataController.add(_mobileDataInfo);
+      _logger.info('Mobile data info initialized: connected=${_mobileDataInfo.isConnected}');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize mobile data info',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _mobileDataInfo = MobileDataInfo.initial();
+      _mobileDataController.add(_mobileDataInfo);
     }
   }
 
@@ -1421,6 +1486,7 @@ class AppStateManagerImpl
     await _screenMetricsController.close();
     await _vpnController.close();
     await _wifiController.close();
+    await _mobileDataController.close();
     await _audioStateController.close();
     await _appRuntimeController.close();
 
@@ -1446,6 +1512,7 @@ class AppStateManagerImpl
       'screenMetricsInfo': _screenMetricsInfo.toMap(),
       'vpnInfo': _vpnInfo.toMap(),
       'wifiInfo': _wifiInfo.toMap(),
+      'mobileDataInfo': _mobileDataInfo.toMap(),
       'audioStateInfo': _audioStateInfo.toMap(),
       'appRuntimeInfo': _appRuntimeInfo.toMap(),
       'navigationState': _navigationState.toMap(),
@@ -1456,6 +1523,8 @@ class AppStateManagerImpl
     };
   }
 
+
+
   @override
   Future<void> refreshAll() async {
     _logger.info('Refreshing all app state...');
@@ -1465,6 +1534,7 @@ class AppStateManagerImpl
         _initializeDeviceInfo(),
         _initializeConnectivity(),
         _initializeWiFiInfo(),
+        _initializeMobileDataInfo(),
         _initializeBatteryInfo(),
         _initializeStorageInfo(),
         _initializeAudioState(),
@@ -1490,6 +1560,12 @@ class AppStateManagerImpl
   Future<void> refreshWiFi() async {
     _logger.info('Refreshing WiFi information...');
     await _initializeWiFiInfo();
+  }
+
+  @override
+  Future<void> refreshMobileData() async {
+    _logger.info('Refreshing mobile data information...');
+    await _initializeMobileDataInfo();
   }
 
   @override

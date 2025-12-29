@@ -61,6 +61,7 @@ class _AppStateDetectionExampleState extends State<AppStateDetectionExample> {
             _AppRuntimeSection(appStateManager: widget.appStateManager),
             _ConnectivitySection(appStateManager: widget.appStateManager),
             _WiFiSection(appStateManager: widget.appStateManager),
+            _MobileDataSection(appStateManager: widget.appStateManager),
             _VpnSection(appStateManager: widget.appStateManager),
             _KeyboardSection(appStateManager: widget.appStateManager),
             _BatterySection(appStateManager: widget.appStateManager),
@@ -663,6 +664,44 @@ class _WiFiSection extends StatelessWidget {
             if (wifi.securityType != null)
               _StateRow('Security', wifi.securityType!),
             _StateRow('Timestamp', _formatTime(wifi.timestamp)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MobileDataSection extends StatelessWidget {
+  final AppStateManager appStateManager;
+
+  const _MobileDataSection({required this.appStateManager});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<MobileDataInfo>(
+      stream: appStateManager.mobileDataStream,
+      initialData: appStateManager.mobileDataInfo,
+      builder: (context, snapshot) {
+        final mobileData = snapshot.data!;
+
+        return _Section(
+          title: '📱 Mobile Data',
+          onRefresh: () => appStateManager.refreshMobileData(),
+          children: [
+            _StateRow('Connected', mobileData.isConnected ? '✅ Yes' : '❌ No'),
+            _StateRow('Data Type', mobileData.dataTypeDisplay),
+            _StateRow('Signal Strength', '${mobileData.signalStrength} dBm'),
+            _StateRow('Signal Quality', mobileData.signalQuality),
+            _StateRow('Signal Percentage', '${mobileData.signalPercentage}%'),
+            if (mobileData.operatorName != null)
+              _StateRow('Operator', mobileData.operatorName!),
+            if (mobileData.isoCountryCode != null)
+              _StateRow('Country Code', mobileData.isoCountryCode!),
+            if (mobileData.mobileNetworkCode != null)
+              _StateRow('Network Code', mobileData.mobileNetworkCode!),
+            if (mobileData.mobileCountryCode != null)
+              _StateRow('Country Code (MCC)', mobileData.mobileCountryCode!),
+            _StateRow('Timestamp', _formatTime(mobileData.timestamp)),
           ],
         );
       },

@@ -228,7 +228,7 @@ class AppStateConfig {
   String toString() {
     return 'AppStateConfig(\n'
         '  Core: lifecycle=$enableAppLifecycle, device=$enableDeviceInfo, connectivity=$enableConnectivity\n'
-        '  Device: battery=$enableBattery, wifi=$enableWiFi, vpn=$enableVPN, audio=$enableAudio, storage=$enableStorage, memory=$enableMemory\n'
+        '  Device: battery=$enableBattery, wifi=$enableWiFi, mobileData=$enableMobileData, vpn=$enableVPN, audio=$enableAudio, storage=$enableStorage, memory=$enableMemory\n'
         '  UI: orientation=$enableOrientation, screenMetrics=$enableScreenMetrics, keyboard=$enableKeyboard\n'
         '  System: permissions=$enablePermissions, settings=$enableSystemSettings, accessibility=$enableAccessibility\n'
         '  App: version=$enableAppVersion, runtime=$enableAppRuntime\n'

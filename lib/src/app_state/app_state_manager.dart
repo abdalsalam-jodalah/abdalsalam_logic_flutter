@@ -10,6 +10,7 @@ import 'models/system_settings_info.dart';
 import 'models/screen_metrics_info.dart';
 import 'models/vpn_info.dart';
 import 'models/wifi_info.dart';
+import 'models/mobile_data_info.dart';
 import 'models/audio_state_info.dart';
 import 'models/app_runtime_info.dart';
 import 'models/navigation_state.dart';
@@ -118,6 +119,9 @@ abstract class AppStateManager implements ServiceInterface {
   /// Current WiFi connection information.
   WiFiInfo get wifiInfo;
 
+  /// Current mobile data connection information.
+  MobileDataInfo get mobileDataInfo;
+
   /// Current audio state information.
   AudioStateInfo get audioStateInfo;
 
@@ -223,6 +227,11 @@ abstract class AppStateManager implements ServiceInterface {
   /// Emits a new [WiFiInfo] whenever WiFi status changes.
   Stream<WiFiInfo> get wifiStream;
 
+  /// Stream of mobile data information changes.
+  ///
+  /// Emits a new [MobileDataInfo] whenever mobile/cellular data status changes.
+  Stream<MobileDataInfo> get mobileDataStream;
+
   /// Stream of audio state changes.
   ///
   /// Emits a new [AudioStateInfo] whenever audio state changes.
@@ -312,6 +321,9 @@ abstract class AppStateManager implements ServiceInterface {
 
   /// Refreshes WiFi information only.
   Future<void> refreshWiFi();
+
+  /// Refreshes mobile data information only.
+  Future<void> refreshMobileData();
 
   /// Refreshes battery information only.
   Future<void> refreshBattery();
