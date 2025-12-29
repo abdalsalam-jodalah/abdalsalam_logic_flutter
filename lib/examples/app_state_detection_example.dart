@@ -13,10 +13,44 @@ class AppStateDetectionExample extends StatefulWidget {
 }
 
 class _AppStateDetectionExampleState extends State<AppStateDetectionExample> {
+  bool _isRefreshing = false;
+
+  Future<void> _refreshAll() async {
+    setState(() => _isRefreshing = true);
+    await widget.appStateManager.refreshAll();
+    setState(() => _isRefreshing = false);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ App state refreshed successfully!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('App State Detection Demo')),
+      appBar: AppBar(
+        title: const Text('App State Detection Demo'),
+        actions: [
+          IconButton(
+            icon: _isRefreshing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: _isRefreshing ? null : _refreshAll,
+            tooltip: 'Refresh All State',
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -229,6 +263,7 @@ class _BatterySection extends StatelessWidget {
 
         return _Section(
           title: '🔋 Battery Status',
+          onRefresh: () => appStateManager.refreshBattery(),
           children: [
             _StateRow(
               'Level',
@@ -368,6 +403,7 @@ class _MemorySection extends StatelessWidget {
 
         return _Section(
           title: '💾 Memory State',
+          onRefresh: () => appStateManager.refreshMemory(),
           children: [
             _StateRow('Level', memory.pressureLevel.name.toUpperCase()),
             _StateRow('Status', memory.memoryStatus),
@@ -607,6 +643,7 @@ class _WiFiSection extends StatelessWidget {
 
         return _Section(
           title: '📶 WiFi',
+          onRefresh: () => appStateManager.refreshWiFi(),
           children: [
             _StateRow('Connected', wifi.isConnected ? '✅ Yes' : '❌ No'),
             if (wifi.ssid != null) _StateRow('SSID', wifi.ssid!),
@@ -788,6 +825,7 @@ class _AudioStateSection extends StatelessWidget {
 
         return _Section(
           title: '🔊 Audio State',
+          onRefresh: () => appStateManager.refreshAudio(),
           children: [
             _StateRow(
               'Volume Level',
@@ -1036,8 +1074,13 @@ class _FullStateSection extends StatelessWidget {
 class _Section extends StatelessWidget {
   final String title;
   final List<Widget> children;
+  final VoidCallback? onRefresh;
 
-  const _Section({required this.title, required this.children});
+  const _Section({
+    required this.title,
+    required this.children,
+    this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1048,7 +1091,24 @@ class _Section extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: ExpansionTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (onRefresh != null)
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 18),
+                onPressed: onRefresh,
+                tooltip: 'Refresh',
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
+              ),
+          ],
+        ),
         children: [
           Padding(
             padding: const EdgeInsets.all(12),

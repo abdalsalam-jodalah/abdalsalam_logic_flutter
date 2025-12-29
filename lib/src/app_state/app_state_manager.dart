@@ -293,6 +293,41 @@ abstract class AppStateManager implements ServiceInterface {
   /// The permissions state is updated and broadcast via [permissionsStream].
   void updatePermissions(List<PermissionInfo> permissions);
 
+  /// Refreshes all app state data by re-initializing all state domains.
+  ///
+  /// This will trigger a complete refresh of:
+  /// - Device information
+  /// - Connectivity status
+  /// - WiFi information
+  /// - Battery status
+  /// - Storage information
+  /// - Audio state
+  /// - Memory information
+  /// - Screen metrics
+  /// - Permissions
+  /// - And all other state domains
+  ///
+  /// All streams will emit updated values after refresh completes.
+  Future<void> refreshAll();
+
+  /// Refreshes WiFi information only.
+  Future<void> refreshWiFi();
+
+  /// Refreshes battery information only.
+  Future<void> refreshBattery();
+
+  /// Refreshes storage information only.
+  Future<void> refreshStorage();
+
+  /// Refreshes audio state only.
+  Future<void> refreshAudio();
+
+  /// Refreshes memory information only.
+  Future<void> refreshMemory();
+
+  /// Refreshes permissions only.
+  Future<void> refreshPermissions();
+
   /// Returns a complete snapshot of all application state.
   ///
   /// Useful for debugging, analytics, or state persistence. Returns a

@@ -1420,6 +1420,72 @@ class AppStateManagerImpl
       'timestamp': DateTime.now().toIso8601String(),
     };
   }
+
+  @override
+  Future<void> refreshAll() async {
+    _logger.info('Refreshing all app state...');
+    
+    try {
+      await Future.wait([
+        _initializeDeviceInfo(),
+        _initializeConnectivity(),
+        _initializeWiFiInfo(),
+        _initializeBatteryInfo(),
+        _initializeStorageInfo(),
+        _initializeAudioState(),
+        _initializeMemoryInfo(),
+        _initializeScreenMetrics(),
+        _initializePermissions(),
+        _initializeAppVersion(),
+        _initializeOrientation(),
+        _initializeSystemSettings(),
+      ]);
+      
+      _logger.info('All app state refreshed successfully');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to refresh all app state',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> refreshWiFi() async {
+    _logger.info('Refreshing WiFi information...');
+    await _initializeWiFiInfo();
+  }
+
+  @override
+  Future<void> refreshBattery() async {
+    _logger.info('Refreshing battery information...');
+    await _initializeBatteryInfo();
+  }
+
+  @override
+  Future<void> refreshStorage() async {
+    _logger.info('Refreshing storage information...');
+    await _initializeStorageInfo();
+  }
+
+  @override
+  Future<void> refreshAudio() async {
+    _logger.info('Refreshing audio state...');
+    await _initializeAudioState();
+  }
+
+  @override
+  Future<void> refreshMemory() async {
+    _logger.info('Refreshing memory information...');
+    await _initializeMemoryInfo();
+  }
+
+  @override
+  Future<void> refreshPermissions() async {
+    _logger.info('Refreshing permissions...');
+    await _initializePermissions();
+  }
 }
 
 void unawaited(Future<void> future) {}
