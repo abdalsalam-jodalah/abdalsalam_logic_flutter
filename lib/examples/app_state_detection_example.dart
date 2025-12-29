@@ -367,16 +367,26 @@ class _MemorySection extends StatelessWidget {
         }
 
         return _Section(
-          title: '💾 Memory Pressure',
+          title: '💾 Memory State',
           children: [
             _StateRow('Level', memory.pressureLevel.name.toUpperCase()),
+            _StateRow('Status', memory.memoryStatus),
+            if (memory.totalMemory != null)
+              _StateRow('Total Memory', memory.totalMemoryGB),
+            if (memory.usedMemory != null)
+              _StateRow('Used Memory', memory.usedMemoryMB),
+            if (memory.freeMemory != null)
+              _StateRow('Free Memory', memory.freeMemoryMB),
+            if (memory.availableMemory != null)
+              _StateRow('Available', memory.availableMemoryMB),
+            if (memory.memoryUsagePercentage != null)
+              _StateRow(
+                'Usage',
+                '${memory.memoryUsagePercentage!.toStringAsFixed(1)}%',
+              ),
             _StateRow(
-              'Status',
-              memory.isCritical
-                  ? '🔴 Critical'
-                  : memory.isWarning
-                  ? '🟠 Warning'
-                  : '🟢 Normal',
+              'Should Reduce Usage',
+              memory.shouldReduceMemoryUsage ? '⚠️ Yes' : '✅ No',
             ),
             _StateRow(
               'Reduce Usage',
@@ -663,15 +673,19 @@ class _StorageSection extends StatelessWidget {
         final storage = snapshot.data!;
 
         return _Section(
-          title: '💾 Storage',
+          title: '� Storage',
           children: [
             _StateRow('Total Space', storage.totalSpaceGB),
-            _StateRow('Free Space', storage.freeSpaceGB),
             _StateRow('Used Space', storage.usedSpaceGB),
+            _StateRow('Free Space', storage.freeSpaceGB),
             _StateRow(
               'Usage',
-              '${storage.usagePercentage.toStringAsFixed(1)}%',
+              storage.totalSpace > 0
+                  ? '${storage.usagePercentage.toStringAsFixed(1)}%'
+                  : 'Not available',
             ),
+            if (storage.usagePercentage >= 90)
+              _StateRow('⚠️ Alert', 'Low storage space!'),
             _StateRow('Timestamp', _formatTime(storage.timestamp)),
           ],
         );
@@ -780,11 +794,17 @@ class _AudioStateSection extends StatelessWidget {
               '${audio.volumeLevel}/${audio.maxVolume}',
             ),
             _StateRow(
-              'Volume %',
+              'Volume',
               '${audio.volumePercentage.toStringAsFixed(0)}%',
             ),
-            _StateRow('Output Type', audio.outputType.name),
+            _StateRow(
+              'Volume Bar',
+              '${"█" * (audio.volumeLevel)}${"░" * (audio.maxVolume - audio.volumeLevel)}',
+            ),
+            _StateRow('Output Type', audio.outputType.name.toUpperCase()),
             _StateRow('Muted', audio.isMuted ? '🔇 Yes' : '🔊 No'),
+            if (audio.volumePercentage > 80)
+              _StateRow('⚠️ Notice', 'High volume may damage hearing'),
             _StateRow('Timestamp', _formatTime(audio.timestamp)),
           ],
         );

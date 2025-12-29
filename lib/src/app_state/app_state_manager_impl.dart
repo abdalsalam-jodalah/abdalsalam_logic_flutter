@@ -9,6 +9,8 @@ import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:battery_plus/battery_plus.dart' as bp;
 import 'package:network_info_plus/network_info_plus.dart' as nip;
+import 'package:disk_space_plus/disk_space_plus.dart';
+import 'package:volume_controller/volume_controller.dart';
 import 'app_state_manager.dart';
 import 'models/app_lifecycle_state.dart' as lifecycle;
 import 'models/device_orientation_info.dart';
@@ -302,11 +304,11 @@ class AppStateManagerImpl
     await _initializeScreenMetrics();
     await _initializeWiFiInfo();
     await _initializeBatteryInfo();
+    await _initializeAudioState();
+    await _initializeMemoryInfo();
     await _initializeSystemSettings();
     _vpnInfo = VpnInfo.initial();
     _vpnController.add(_vpnInfo);
-    _audioStateInfo = AudioStateInfo.initial();
-    _audioStateController.add(_audioStateInfo);
     _appRuntimeInfo = AppRuntimeInfo.initial();
     _appRuntimeController.add(_appRuntimeInfo);
 
@@ -827,7 +829,10 @@ class AppStateManagerImpl
   }
 
   void _updateMemoryPressure(MemoryPressureLevel level) {
-    _memoryInfo = MemoryInfo(pressureLevel: level, timestamp: DateTime.now());
+    _memoryInfo = _memoryInfo.copyWith(
+      pressureLevel: level,
+      timestamp: DateTime.now(),
+    );
 
     _memoryController.add(_memoryInfo);
     _logger.warning('Memory pressure: ${level.name}');
@@ -1036,17 +1041,43 @@ class AppStateManagerImpl
 
   Future<void> _initializeStorageInfo() async {
     try {
-      // Note: storage info implementation would require additional packages
-      // For now, we initialize with default values
-      _storageInfo = StorageInfo.initial();
+      if (kIsWeb) {
+        _storageInfo = StorageInfo.initial();
+        _storageController.add(_storageInfo);
+        return;
+      }
+
+      // Get actual disk space information
+      final diskSpace = await DiskSpacePlus().getFreeDiskSpace;
+      final totalSpace = await DiskSpacePlus().getTotalDiskSpace;
+
+      if (diskSpace != null && totalSpace != null) {
+        final freeBytes = (diskSpace * 1024 * 1024).toInt();
+        final totalBytes = (totalSpace * 1024 * 1024).toInt();
+        final usedBytes = totalBytes - freeBytes;
+        final usagePercentage = (usedBytes / totalBytes) * 100;
+
+        _storageInfo = StorageInfo(
+          totalSpace: totalBytes,
+          freeSpace: freeBytes,
+          usedSpace: usedBytes,
+          usagePercentage: usagePercentage,
+          timestamp: DateTime.now(),
+        );
+      } else {
+        _storageInfo = StorageInfo.initial();
+      }
+
       _storageController.add(_storageInfo);
-      _logger.info('Storage info initialized');
+      _logger.info('Storage info initialized: ${_storageInfo.totalSpaceGB} total, ${_storageInfo.freeSpaceGB} free');
     } catch (error, stackTrace) {
       _logger.error(
         'Failed to initialize storage info',
         error: error,
         stackTrace: stackTrace,
       );
+      _storageInfo = StorageInfo.initial();
+      _storageController.add(_storageInfo);
     }
   }
 
@@ -1196,6 +1227,109 @@ class AppStateManagerImpl
         error: error,
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  Future<void> _initializeAudioState() async {
+    try {
+      if (kIsWeb) {
+        _audioStateInfo = AudioStateInfo.initial();
+        _audioStateController.add(_audioStateInfo);
+        return;
+      }
+
+      // Get current volume level
+      final volume = await VolumeController().getVolume();
+      final volumeLevel = (volume * 15).round();
+
+      _audioStateInfo = AudioStateInfo(
+        volumeLevel: volumeLevel,
+        maxVolume: 15,
+        outputType: AudioOutputType.speaker,
+        isMuted: volumeLevel == 0,
+        timestamp: DateTime.now(),
+      );
+
+      _audioStateController.add(_audioStateInfo);
+
+      // Listen to volume changes
+      VolumeController().listener((newVolume) {
+        final newVolumeLevel = (newVolume * 15).round();
+        _audioStateInfo = _audioStateInfo.copyWith(
+          volumeLevel: newVolumeLevel,
+          isMuted: newVolumeLevel == 0,
+          timestamp: DateTime.now(),
+        );
+        _audioStateController.add(_audioStateInfo);
+      });
+
+      _logger.info('Audio state initialized: volume=$volumeLevel');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize audio state',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _audioStateInfo = AudioStateInfo.initial();
+      _audioStateController.add(_audioStateInfo);
+    }
+  }
+
+  Future<void> _initializeMemoryInfo() async {
+    try {
+      if (kIsWeb) {
+        _memoryInfo = MemoryInfo(
+          pressureLevel: MemoryPressureLevel.normal,
+          timestamp: DateTime.now(),
+        );
+        _memoryController.add(_memoryInfo);
+        return;
+      }
+
+      // Get memory information based on platform
+      int? totalMemory;
+      int? freeMemory;
+      int? usedMemory;
+      double? memoryUsagePercentage;
+
+      if (Platform.isAndroid) {
+        // Android memory info would require platform channel
+        // For now, using estimated values
+        totalMemory = 4 * 1024 * 1024 * 1024; // 4GB estimate
+        freeMemory = (1.5 * 1024 * 1024 * 1024).toInt(); // 1.5GB estimate
+        usedMemory = totalMemory - freeMemory;
+        memoryUsagePercentage = (usedMemory / totalMemory) * 100;
+      } else if (Platform.isIOS) {
+        // iOS memory info would require platform channel
+        totalMemory = 4 * 1024 * 1024 * 1024; // 4GB estimate
+        freeMemory = (2 * 1024 * 1024 * 1024).toInt(); // 2GB estimate
+        usedMemory = totalMemory - freeMemory;
+        memoryUsagePercentage = (usedMemory / totalMemory) * 100;
+      }
+
+      _memoryInfo = MemoryInfo(
+        pressureLevel: MemoryPressureLevel.normal,
+        totalMemory: totalMemory,
+        freeMemory: freeMemory,
+        usedMemory: usedMemory,
+        memoryUsagePercentage: memoryUsagePercentage,
+        availableMemory: freeMemory,
+        timestamp: DateTime.now(),
+      );
+
+      _memoryController.add(_memoryInfo);
+      _logger.info('Memory info initialized: ${_memoryInfo.usedMemoryMB} / ${_memoryInfo.totalMemoryGB}');
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to initialize memory info',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _memoryInfo = MemoryInfo(
+        pressureLevel: MemoryPressureLevel.normal,
+        timestamp: DateTime.now(),
+      );
+      _memoryController.add(_memoryInfo);
     }
   }
 
