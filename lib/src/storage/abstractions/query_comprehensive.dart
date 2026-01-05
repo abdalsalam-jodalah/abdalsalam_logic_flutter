@@ -484,24 +484,16 @@ class Aggregation {
         field = null;
 
   /// Sum of field values.
-  const Aggregation.sum(String field)
-      : type = AggregationType.sum,
-        field = field;
+  const Aggregation.sum(this.field) : type = AggregationType.sum;
 
   /// Average of field values.
-  const Aggregation.avg(String field)
-      : type = AggregationType.avg,
-        field = field;
+  const Aggregation.avg(this.field) : type = AggregationType.avg;
 
   /// Minimum field value.
-  const Aggregation.min(String field)
-      : type = AggregationType.min,
-        field = field;
+  const Aggregation.min(this.field) : type = AggregationType.min;
 
   /// Maximum field value.
-  const Aggregation.max(String field)
-      : type = AggregationType.max,
-        field = field;
+  const Aggregation.max(this.field) : type = AggregationType.max;
 
   @override
   String toString() => '$type${field != null ? '($field)' : '()'}';

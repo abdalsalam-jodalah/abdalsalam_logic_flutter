@@ -1,25 +1,23 @@
 // lib/src/storage/index_comprehensive.dart
 
-// ============================================================================
-// COMPREHENSIVE STORAGE ABSTRACTION LAYER
-// ============================================================================
-//
-// Full-featured, type-safe abstraction for storage management across all backends.
-//
-// DESIGN PRINCIPLES:
-// - Capability-based: Optional features are separate interfaces
-// - Type-safe: Generics ensure compile-time correctness
-// - Backend-agnostic: No platform or implementation dependencies
-// - Comprehensive: Supports all storage categories and operations
-//
-// ARCHITECTURE:
-// - Base Storage: Lifecycle management (initialize, clear, dispose)
-// - KeyValueStorage<T>: Key-value operations
-// - EntityStorage<ID, T>: Structured entity operations
-// - Optional Capabilities: Transaction, Query, Schema, Migration, etc.
-//
-// See COMPREHENSIVE_STORAGE_GUIDE.md for detailed documentation.
-// ============================================================================
+/// Comprehensive Storage Abstraction Layer
+///
+/// Full-featured, type-safe abstraction for storage management across all backends.
+///
+/// DESIGN PRINCIPLES:
+/// - Capability-based: Optional features are separate interfaces
+/// - Type-safe: Generics ensure compile-time correctness
+/// - Backend-agnostic: No platform or implementation dependencies
+/// - Comprehensive: Supports all storage categories and operations
+///
+/// ARCHITECTURE:
+/// - Base Storage: Lifecycle management (initialize, clear, dispose)
+/// - KeyValueStorage<T>: Key-value operations
+/// - EntityStorage<ID, T>: Structured entity operations
+/// - Optional Capabilities: Transaction, Query, Schema, Migration, etc.
+///
+/// See COMPREHENSIVE_STORAGE_GUIDE.md for detailed documentation.
+library;
 
 // ----------------------------------------------------------------------------
 // CORE INTERFACES
