@@ -1,30 +1,52 @@
 // lib/src/storage/abstractions/storage_interface.dart
 
-import 'storage_transaction.dart';
 import '../exceptions/storage_exceptions.dart';
+import '../types/storage_metadata.dart';
 
 /// Base abstraction for all storage backends.
 ///
-/// Defines the minimal contract that every storage implementation must fulfill.
-/// Implementations handle:
-/// - Initialization and cleanup
-/// - Storage metadata and state
-/// - Transaction support
-/// - Error handling
+/// **LIFECYCLE MANAGEMENT ONLY** - Optional features are in capability interfaces.
 ///
-/// Responsibilities:
-/// - Ensure thread-safe operations
-/// - Handle cleanup properly
-/// - Wrap backend errors as StorageException subclasses
-/// - Support lazy initialization
+/// Core responsibilities:
+/// - Initialize storage lazily
+/// - Check readiness state
+/// - Clear all data
+/// - Dispose resources safely
+/// - Provide metadata
+///
+/// Design principle: Interface Segregation
+/// - Base interface has only essential lifecycle operations
+/// - Optional features (transactions, queries, schema, etc.) are separate capability interfaces
+/// - Implementations opt-in to capabilities they support
 ///
 /// Example:
 /// ```dart
-/// abstract class Storage {
-///   Future<void> initialize();
-///   Future<void> clear();
-///   Future<void> dispose();
-///   Future<StorageTransaction> transaction();
+/// class MyStorage implements Storage {
+///   bool _initialized = false;
+///   bool _disposed = false;
+///
+///   @override
+///   bool get isInitialized => _initialized;
+///
+///   @override
+///   bool get isDisposed => _disposed;
+///
+///   @override
+///   Future<void> initialize() async {
+///     // Setup storage
+///     _initialized = true;
+///   }
+///
+///   @override
+///   Future<void> clear() async {
+///     // Clear all data
+///   }
+///
+///   @override
+///   Future<void> dispose() async {
+///     // Cleanup resources
+///     _disposed = true;
+///   }
 /// }
 /// ```
 abstract class Storage {
@@ -46,20 +68,24 @@ abstract class Storage {
   /// Implementations should:
   /// - Create necessary files/databases
   /// - Verify storage is accessible
-  /// - Perform migrations if needed
   /// - Initialize internal structures
+  /// - Load configuration
+  ///
+  /// **NOTE:** Schema migrations are handled via [MigratableStorage] capability.
   ///
   /// Throws:
   /// - [StorageInitializationException] if initialization fails
-  /// - [StorageStateException] if already initialized
+  /// - [StorageStateException] if already disposed
   ///
-  /// May be called multiple times without issue (idempotent).
+  /// Must be idempotent - safe to call multiple times.
   Future<void> initialize();
 
   /// Clears all data from storage.
   ///
-  /// Removes all keys, entities, and associated data.
+  /// Removes all keys, entities, tables, and associated data.
   /// Storage remains initialized and can be used after clearing.
+  ///
+  /// **WARNING:** This is a destructive operation that cannot be undone.
   ///
   /// Throws:
   /// - [StorageStateException] if storage is not initialized or is disposed
@@ -71,106 +97,31 @@ abstract class Storage {
   /// Closes connections, releases resources, and cleans up.
   /// After disposal, all operations should fail with [StorageStateException].
   ///
-  /// Should be idempotent - calling dispose multiple times is safe.
+  /// Must be idempotent - safe to call multiple times.
   /// Implementations should:
   /// - Close database connections
   /// - Release file handles
   /// - Cleanup memory
   /// - Cancel pending operations
+  /// - Stop background tasks
+  ///
+  /// After disposal, call [initialize] to use storage again.
   Future<void> dispose();
 
-  /// Begins a new transaction.
+  /// Gets metadata about the storage implementation.
   ///
-  /// Transactions allow grouping multiple operations as a single atomic unit.
-  /// If any operation in the transaction fails, all changes are rolled back.
-  ///
-  /// Returns a [StorageTransaction] that supports:
-  /// - Committing all changes
-  /// - Rolling back all changes
-  /// - Executing operations within transaction context
-  ///
-  /// Throws:
-  /// - [StorageStateException] if storage is not initialized or is disposed
-  /// - [StorageUnsupportedException] if backend doesn't support transactions
-  /// - [StorageTransactionException] if transaction creation fails
-  ///
-  /// Note: Nested transactions behavior depends on implementation.
-  /// Implementations may not support nested transactions.
-  Future<StorageTransaction> transaction();
-
-  /// Gets metadata about the storage.
-  ///
-  /// Returns information about:
-  /// - Storage type name
-  /// - Version
-  /// - Supported features
+  /// Returns [StorageMetadata] with:
+  /// - Storage type and version
+  /// - Supported capabilities
+  /// - Limits (max size, max keys, etc.)
   /// - Performance characteristics
+  /// - Platform compatibility
   ///
   /// Returns `null` if metadata is unavailable.
+  ///
+  /// Use metadata to:
+  /// - Detect supported features before using capability interfaces
+  /// - Respect implementation limits
+  /// - Optimize for performance characteristics
   StorageMetadata? getMetadata();
-
-  /// Checks if storage is in a valid, usable state.
-  ///
-  /// Performs a quick validation to ensure:
-  /// - Storage is initialized
-  /// - Storage is not disposed
-  /// - Storage is accessible
-  ///
-  /// Returns `true` if storage is healthy and ready to use.
-  /// Returns `false` if storage is unusable.
-  bool isHealthy();
-}
-
-/// Metadata about a storage implementation.
-///
-/// Provides information for debugging, logging, and feature detection.
-class StorageMetadata {
-  /// Name of the storage backend.
-  final String type;
-
-  /// Version of the storage backend.
-  final String version;
-
-  /// List of supported features.
-  ///
-  /// Examples: 'transactions', 'queries', 'encryption', 'compression'
-  final List<String> supportedFeatures;
-
-  /// Maximum size per value (in bytes), or `null` if unlimited.
-  final int? maxValueSize;
-
-  /// Maximum number of keys, or `null` if unlimited.
-  final int? maxKeys;
-
-  /// Whether this storage supports transactions.
-  final bool supportsTransactions;
-
-  /// Whether this storage supports queries.
-  final bool supportsQueries;
-
-  /// Whether this storage supports concurrent access.
-  final bool supportsConcurrency;
-
-  /// Additional metadata as key-value pairs.
-  final Map<String, dynamic> custom;
-
-  const StorageMetadata({
-    required this.type,
-    required this.version,
-    this.supportedFeatures = const [],
-    this.maxValueSize,
-    this.maxKeys,
-    this.supportsTransactions = false,
-    this.supportsQueries = false,
-    this.supportsConcurrency = false,
-    this.custom = const {},
-  });
-
-  /// Returns `true` if this storage supports the given feature.
-  bool supports(String feature) => supportedFeatures.contains(feature);
-
-  @override
-  String toString() {
-    return 'StorageMetadata(type: $type, version: $version, features: $supportedFeatures)';
-  }
 }
