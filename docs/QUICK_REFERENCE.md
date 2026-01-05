@@ -48,6 +48,36 @@ appStateManager.accessibilityStream.listen((a11y) { });
 // Memory pressure
 appStateManager.memoryStream.listen((memory) { });
 
+// WiFi info
+appStateManager.wifiStream.listen((wifi) { });
+
+// Mobile data info
+appStateManager.mobileDataStream.listen((mobile) { });
+
+// Storage info
+appStateManager.storageStream.listen((storage) { });
+
+// Audio state
+appStateManager.audioStateStream.listen((audio) { });
+
+// VPN info
+appStateManager.vpnStream.listen((vpn) { });
+
+// Device orientation
+appStateManager.deviceOrientationStream.listen((orientation) { });
+
+// App version
+appStateManager.appVersionStream.listen((version) { });
+
+// Screen metrics
+appStateManager.screenMetricsStream.listen((metrics) { });
+
+// System settings
+appStateManager.systemSettingsStream.listen((settings) { });
+
+// App runtime
+appStateManager.appRuntimeStream.listen((runtime) { });
+
 // Permissions
 appStateManager.permissionsStream.listen((permissions) { });
 ```
@@ -101,6 +131,23 @@ final screenReaderEnabled = a11y?.isScreenReaderEnabled ?? false;
 final memory = appStateManager.memoryInfo;
 final isMemoryCritical = memory?.isCritical ?? false;
 
+// WiFi
+final wifi = appStateManager.wifiInfo;
+final isWiFiConnected = wifi.isConnected;
+final ssid = wifi.ssid;
+
+// Mobile Data
+final mobile = appStateManager.mobileDataInfo;
+final isMobileConnected = mobile.isConnected;
+
+// Storage
+final storage = appStateManager.storageInfo;
+final isLowStorage = storage.isLowSpace;
+
+// Audio
+final audio = appStateManager.audioStateInfo;
+final volume = audio.volumeLevel;
+
 // Permissions
 final permissions = appStateManager.permissionsInfo;
 final cameraGranted = permissions.isGranted(PermissionType.camera);
@@ -138,6 +185,18 @@ appStateManager.updatePermission(permissionInfo);
 
 // Update permissions (multiple)
 appStateManager.updatePermissions([permission1, permission2]);
+
+// Refresh all state domains
+await appStateManager.refreshAll();
+
+// Refresh individual domains
+await appStateManager.refreshWiFi();
+await appStateManager.refreshMobileData();
+await appStateManager.refreshBattery();
+await appStateManager.refreshStorage();
+await appStateManager.refreshAudio();
+await appStateManager.refreshMemory();
+await appStateManager.refreshPermissions();
 
 // Get full state snapshot
 final snapshot = appStateManager.getFullState();

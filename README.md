@@ -157,7 +157,7 @@ runApp(MyApp(appStateManager: appStateManager));
 | **VPN Info** | VPN connection detection | Connection status |
 | **Battery Info** | Battery monitoring with live updates | Level, state, health, temperature |
 | **Storage Info** | Device storage tracking | Total, free, used, percentage |
-| **Memory Info** | System memory & pressure | Total, free, used, pressure level |
+| **Memory Info** | System memory & pressure | Total, free, used (live), pressure level |
 | **Audio State** | Volume monitoring | Level, output type, mute status |
 | **Orientation** | Screen orientation | Portrait/landscape |
 | **Screen Metrics** | Display measurements | Pixel ratio, DPI, safe areas |

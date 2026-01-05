@@ -1,5 +1,15 @@
 # App State Management - Complete Guide
 
+**Last Updated**: January 5, 2026
+
+## Recent Improvements
+
+- ✅ **Memory Info**: Now uses `ProcessInfo.currentRss` for real-time, accurate memory values instead of hardcoded estimates
+- ✅ **Dynamic Updates**: Memory values now update dynamically as app usage changes
+- ✅ **Better Logging**: Enhanced memory pressure logs show actual used/free memory values
+
+---
+
 ## Overview
 
 The App State Management system provides comprehensive, reactive tracking of 21+ different state domains in your Flutter application. It follows a **modular, opt-in architecture** where you only initialize and bundle the features you actually need.
@@ -433,34 +443,54 @@ await appStateManager.refreshStorage();
 
 **Feature Flag**: `enableMemory`
 
-System memory tracking and pressure monitoring.
+Real-time system memory tracking and pressure monitoring using live process data.
 
 **Data Provided**:
 - Pressure level (normal/warning/critical)
 - Total memory (bytes/MB/GB)
 - Free memory (bytes/MB/GB)
-- Used memory (bytes/MB/GB)
+- Used memory (bytes/MB/GB) - **Live data from ProcessInfo.currentRss**
 - Usage percentage
 - Available memory
+- Memory status (Healthy/Moderate/High/Critical)
+
+**How It Works**:
+- Uses `ProcessInfo.currentRss` to read actual app process memory consumption
+- Memory values update dynamically based on real system usage
+- Pressure level automatically detected by Flutter framework
+- Values change as app memory usage grows or shrinks
 
 **Usage**:
 ```dart
 appStateManager.memoryStream.listen((memory) {
-  if (memory != null) {
-    print('Pressure: ${memory.pressureLevel.name}');
-    print('Used: ${memory.usedMemoryMB.toStringAsFixed(0)} MB');
-    print('Free: ${memory.freeMemoryMB.toStringAsFixed(0)} MB');
-    print('Total: ${memory.totalMemoryGB.toStringAsFixed(1)} GB');
-    
-    if (memory.pressureLevel == MemoryPressureLevel.critical) {
-      freeUpResources();
-    }
+  print('Pressure: ${memory.pressureLevel.name}');
+  print('Used: ${memory.usedMemoryMB} (real-time)');
+  print('Free: ${memory.freeMemoryMB}');
+  print('Total: ${memory.totalMemoryGB}');
+  print('Status: ${memory.memoryStatus}');
+  print('Usage: ${memory.memoryUsagePercentage?.toStringAsFixed(1)}%');
+  
+  if (memory.shouldReduceMemoryUsage) {
+    // Memory pressure detected
+    freeUpResources();
+    clearCaches();
+  }
+  
+  if (memory.pressureLevel == MemoryPressureLevel.critical) {
+    // Critical memory situation
+    forceGarbageCollection();
   }
 });
 
-// Manual refresh
+// Manual refresh to get latest values
 await appStateManager.refreshMemory();
 ```
+
+**Memory Status Indicators**:
+- 🟢 **Healthy** - Usage < 60%
+- 🟡 **Moderate** - Usage 60-79%
+- 🟠 **High** - Usage 80-89%
+- 🔴 **Critical** - Usage ≥ 90%
 
 ### 10. Audio State
 
