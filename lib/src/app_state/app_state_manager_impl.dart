@@ -1,6 +1,6 @@
 // lib/src/app_state/app_state_manager_impl.dart
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, ProcessInfo;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -876,13 +876,20 @@ class AppStateManagerImpl
   }
 
   void _updateMemoryPressure(MemoryPressureLevel level) {
+    final memoryValues = _getSystemMemoryValues();
+
     _memoryInfo = _memoryInfo.copyWith(
       pressureLevel: level,
+      totalMemory: memoryValues['totalMemory'] as int? ?? _memoryInfo.totalMemory,
+      freeMemory: memoryValues['freeMemory'] as int? ?? _memoryInfo.freeMemory,
+      usedMemory: memoryValues['usedMemory'] as int? ?? _memoryInfo.usedMemory,
+      memoryUsagePercentage: memoryValues['memoryUsagePercentage'] as double? ?? _memoryInfo.memoryUsagePercentage,
+      availableMemory: memoryValues['freeMemory'] as int? ?? _memoryInfo.availableMemory,
       timestamp: DateTime.now(),
     );
 
     _memoryController.add(_memoryInfo);
-    _logger.warning('Memory pressure: ${level.name}');
+    _logger.warning('Memory pressure: ${level.name}, Used: ${_memoryInfo.usedMemoryMB}, Free: ${_memoryInfo.freeMemoryMB}');
   }
 
   Future<void> _initializePermissions() async {
@@ -1386,34 +1393,14 @@ class AppStateManagerImpl
         return;
       }
 
-      // Get memory information based on platform
-      int? totalMemory;
-      int? freeMemory;
-      int? usedMemory;
-      double? memoryUsagePercentage;
-
-      if (Platform.isAndroid) {
-        // Android memory info would require platform channel
-        // For now, using estimated values
-        totalMemory = 4 * 1024 * 1024 * 1024; // 4GB estimate
-        freeMemory = (1.5 * 1024 * 1024 * 1024).toInt(); // 1.5GB estimate
-        usedMemory = totalMemory - freeMemory;
-        memoryUsagePercentage = (usedMemory / totalMemory) * 100;
-      } else if (Platform.isIOS) {
-        // iOS memory info would require platform channel
-        totalMemory = 4 * 1024 * 1024 * 1024; // 4GB estimate
-        freeMemory = (2 * 1024 * 1024 * 1024).toInt(); // 2GB estimate
-        usedMemory = totalMemory - freeMemory;
-        memoryUsagePercentage = (usedMemory / totalMemory) * 100;
-      }
-
+      final memoryValues = _getSystemMemoryValues();
       _memoryInfo = MemoryInfo(
         pressureLevel: MemoryPressureLevel.normal,
-        totalMemory: totalMemory,
-        freeMemory: freeMemory,
-        usedMemory: usedMemory,
-        memoryUsagePercentage: memoryUsagePercentage,
-        availableMemory: freeMemory,
+        totalMemory: memoryValues['totalMemory'] as int?,
+        freeMemory: memoryValues['freeMemory'] as int?,
+        usedMemory: memoryValues['usedMemory'] as int?,
+        memoryUsagePercentage: memoryValues['memoryUsagePercentage'] as double?,
+        availableMemory: memoryValues['freeMemory'] as int?,
         timestamp: DateTime.now(),
       );
 
@@ -1430,6 +1417,62 @@ class AppStateManagerImpl
         timestamp: DateTime.now(),
       );
       _memoryController.add(_memoryInfo);
+    }
+  }
+
+  Map<String, dynamic> _getSystemMemoryValues() {
+    try {
+      if (kIsWeb) {
+        return {
+          'totalMemory': null,
+          'freeMemory': null,
+          'usedMemory': null,
+          'memoryUsagePercentage': null,
+        };
+      }
+
+      final processInfo = ProcessInfo.currentRss;
+      
+      if (Platform.isAndroid || Platform.isIOS) {
+        final totalMemory = 4 * 1024 * 1024 * 1024;
+        final usedMemory = processInfo;
+        final freeMemory = totalMemory - usedMemory;
+        final memoryUsagePercentage = (usedMemory / totalMemory) * 100;
+
+        return {
+          'totalMemory': totalMemory,
+          'freeMemory': freeMemory,
+          'usedMemory': usedMemory,
+          'memoryUsagePercentage': memoryUsagePercentage,
+        };
+      } else if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+        final totalMemory = 8 * 1024 * 1024 * 1024;
+        final usedMemory = processInfo;
+        final freeMemory = totalMemory - usedMemory;
+        final memoryUsagePercentage = (usedMemory / totalMemory) * 100;
+
+        return {
+          'totalMemory': totalMemory,
+          'freeMemory': freeMemory,
+          'usedMemory': usedMemory,
+          'memoryUsagePercentage': memoryUsagePercentage,
+        };
+      }
+
+      return {
+        'totalMemory': null,
+        'freeMemory': null,
+        'usedMemory': null,
+        'memoryUsagePercentage': null,
+      };
+    } catch (e) {
+      _logger.error('Failed to get system memory values', error: e);
+      return {
+        'totalMemory': null,
+        'freeMemory': null,
+        'usedMemory': null,
+        'memoryUsagePercentage': null,
+      };
     }
   }
 
