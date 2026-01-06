@@ -1,146 +1,130 @@
-# Documentation Index
+# Documentation
 
-Complete documentation for `abdalsalam_logic_flutter` package.
+Welcome to the comprehensive documentation for `abdalsalam_logic_flutter`.
 
-## Package Modules
+## Quick Navigation
 
-### Core State Management
+### Core Services
 
-- **[App State Manager](./APP_STATE_MANAGER.md)** - Comprehensive centralized state management
-  - Lifecycle tracking
-  - Device information monitoring
-  - Navigation state management
-  - Theme and locale management
-  - Authentication state tracking
-  - Permission management
-  - Keyboard visibility detection
-  - Battery status monitoring
-  - Network connectivity tracking
-  - Accessibility features detection
-  - Memory pressure monitoring
-  - Reactive streams for all state domains
-
-## Quick Links
-
-- [App State Manager Documentation](./APP_STATE_MANAGER.md)
-  - Architecture overview
-  - Detailed state models (11 domains)
-  - Usage examples
-  - Best practices
-  - Initialization & lifecycle
+- **[Storage](STORAGE.md)** - Type-safe storage abstraction layer for key-value and entity storage
+- **[App State](APP_STATE.md)** - Comprehensive app and device state monitoring with 21+ domains
+- **[Authentication](AUTHENTICATION.md)** - User authentication service (sign in, sign up, token management)
+- **[FCM (Push Notifications)](FCM.md)** - Firebase Cloud Messaging integration
+- **[Networking (API Client)](NETWORKING.md)** - HTTP client for RESTful API communication
 
 ## Getting Started
 
-### 1. App Initialization
+1. **Installation**: Add the package to your `pubspec.yaml`
+   ```yaml
+   dependencies:
+     abdalsalam_logic_flutter: ^1.0.0
+   ```
+
+2. **Choose Your Features**: Each service is modular - only import what you need
+
+3. **Initialize**: Set up services using dependency injection (GetIt recommended)
+
+4. **Use**: Follow service-specific documentation for detailed usage
+
+## Service Overview
+
+### Storage
+Provides abstraction for all storage needs:
+- **KeyValueStorage** - For preferences, cache, settings
+- **EntityStorage** - For structured data, database records
+- **Optional Capabilities** - Transactions, queries, watching, versioning
+
+**[Read Full Documentation →](STORAGE.md)**
+
+### App State
+Monitor 21+ app and device states:
+- Connectivity (WiFi, Mobile, VPN)
+- Device info (battery, orientation, screen)
+- System (permissions, memory, storage)
+- Modular configuration (only bundle what you enable)
+
+**[Read Full Documentation →](APP_STATE.md)**
+
+### Authentication
+Complete auth flow:
+- Sign in / Sign up
+- Password reset
+- Token management
+- Session handling
+
+**[Read Full Documentation →](AUTHENTICATION.md)**
+
+### FCM
+Push notification management:
+- Token retrieval and refresh
+- Topic subscriptions
+- Message handling (foreground/background)
+- Deep linking
+
+**[Read Full Documentation →](FCM.md)**
+
+### Networking
+HTTP API client:
+- RESTful operations (GET, POST, PUT, PATCH, DELETE)
+- Authentication integration
+- Error handling
+- Configuration (base URL, headers)
+
+**[Read Full Documentation →](NETWORKING.md)**
+
+## Architecture Principles
+
+All services follow these principles:
+
+1. **Interface-Based** - Clean contracts, easy testing
+2. **Modular** - Use only what you need
+3. **Type-Safe** - Strong typing throughout
+4. **Backend-Agnostic** - Work with any implementation
+5. **Production-Ready** - Battle-tested patterns
+
+## Quick Start Example
 
 ```dart
-final logger = LoggerServiceImpl();
-final appStateManager = AppStateManagerImpl.create(logger);
-await appStateManager.initialize();
-```
+import 'package:get_it/get_it.dart';
+import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 
-### 2. Listen to State Changes
+void setupServices() {
+  final getIt = GetIt.instance;
+  
+  // Storage
+  getIt.registerLazySingleton<KeyValueStorage<String>>(
+    () => PreferencesStorage(),
+  );
+  
+  // Auth & API
+  getIt.registerLazySingleton<AuthService>(() => AuthServiceImpl());
+  getIt.registerLazySingleton<ApiClient>(() => ApiClientImpl());
+  
+  // App State
+  getIt.registerLazySingleton<AppStateManager>(
+    () => AppStateManagerImpl.create(
+      getIt<LoggerService>(),
+      config: AppStateConfig(enableConnectivity: true),
+    ),
+  );
+}
 
-```dart
-appStateManager.stateStream.listen((state) {
-  if (state.isOnline && state.isForeground) {
-    // App is active and connected
-  }
-});
-```
-
-### 3. Access Current State
-
-```dart
-final device = appStateManager.deviceInfo;
-if (device != null && device.isPhone) {
-  // Phone-specific logic
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  setupServices();
+  
+  // Initialize
+  await GetIt.I<AuthService>().initialize();
+  await GetIt.I<AppStateManager>().initialize();
+  
+  runApp(MyApp());
 }
 ```
 
-### 4. Update State
-
-```dart
-// Theme
-appStateManager.updateTheme(ThemeMode.dark);
-
-// Locale
-appStateManager.updateLocale(Locale('ar'));
-
-// Permissions
-appStateManager.updatePermission(
-  PermissionInfo.granted(PermissionType.camera),
-);
-
-// Authentication
-appStateManager.setAuthenticated(user, token);
-```
-
-## Module Structure
-
-```
-lib/
-├── src/
-│   ├── app_state/                 # State management module
-│   │   ├── app_state_manager.dart         # Interface
-│   │   ├── app_state_manager_impl.dart    # Implementation
-│   │   └── models/
-│   │       ├── app_lifecycle_state.dart
-│   │       ├── device_info.dart
-│   │       ├── navigation_state.dart
-│   │       ├── locale_info.dart
-│   │       ├── auth_info.dart
-│   │       ├── keyboard_info.dart
-│   │       ├── battery_info.dart
-│   │       ├── network_info.dart
-│   │       ├── accessibility_info.dart
-│   │       ├── memory_info.dart
-│   │       └── permissions_info.dart
-│   ├── core/                      # Core interfaces
-│   ├── logging/                   # Logging service
-│   ├── storage/                   # Storage gateway
-│   ├── networking/                # API client
-│   ├── auth/                      # Authentication
-│   └── ...                        # Other modules
-└── examples/
-    ├── app_state_simple_example.dart
-    ├── app_state_usage_guide.dart
-    └── README.md
-```
-
-## Examples
-
-- [Simple App State Example](../lib/examples/app_state_simple_example.dart)
-- [App State Usage Guide](../lib/examples/app_state_usage_guide.dart)
-
-## Contributing
-
-Follow these guidelines when adding new features:
-
-1. Maintain interface-based design
-2. Document public APIs with dartdoc comments
-3. Add usage examples to documentation
-4. Test state transitions thoroughly
-5. Follow SOLID principles
-
-## API Reference
-
-- **AppStateManager** - Main interface for state management
-- **AppStateManagerImpl** - Reference implementation
-- **AppStateInfo** - Lifecycle and connectivity state
-- **DeviceInfo** - Device metrics and information
-- **NavigationState** - Route and tab navigation
-- **AuthInfo** - Authentication and user info
-- **PermissionsInfo** - App permissions tracking
-- **KeyboardInfo** - Keyboard visibility
-- **BatteryInfo** - Battery and power info
-- **NetworkInfo** - Network connectivity info
-- **AccessibilityInfo** - Accessibility settings
-- **MemoryInfo** - Memory pressure info
-
 ## Support
 
-For issues and questions, refer to:
-1. [APP_STATE_MANAGER.md](./APP_STATE_MANAGER.md) - Detailed documentation
-2. [lib/examples/](../lib/examples/) - Working examples
-3. [README.md](../README.md) - Package overview
+For issues, questions, or contributions, please visit the repository.
+
+## License
+
+MIT License - See LICENSE file for details.
