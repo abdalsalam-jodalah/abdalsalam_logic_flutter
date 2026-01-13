@@ -15,9 +15,10 @@
 5. [Type System](#type-system)
 6. [Usage Patterns](#usage-patterns)
 7. [Implementation Guide](#implementation-guide)
-8. [Best Practices](#best-practices)
-9. [API Reference](#api-reference)
-10. [Examples](#examples)
+8. [Storage Exceptions](#storage-exceptions)
+9. [Best Practices](#best-practices)
+10. [API Reference](#api-reference)
+11. [Examples](#examples)
 
 ---
 
@@ -763,6 +764,447 @@ try {
   throw StorageException('Failed to create entity: $e');
 }
 ```
+
+---
+
+## Storage Exceptions
+
+### Exception Hierarchy
+
+All storage exceptions extend from the base `StorageException` class:
+
+```dart
+abstract class StorageException implements Exception {
+  final String message;
+  final String code;
+  final dynamic originalError;
+  final StackTrace? stackTrace;
+  
+  const StorageException({
+    required this.message,
+    required this.code,
+    this.originalError,
+    this.stackTrace,
+  });
+}
+```
+
+### Available Exception Types
+
+| Exception | Error Code | Use Case |
+|-----------|------------|----------|
+| `StorageInitializationException` | `STORAGE_INIT` | Database/storage initialization failures |
+| `StorageNotFoundException` | `STORAGE_NOT_FOUND` | Entity or table not found |
+| `StorageConstraintException` | `STORAGE_CONSTRAINT` | Constraint violations (unique, foreign key, etc.) |
+| `StorageSpaceException` | `STORAGE_SPACE` | Insufficient disk space |
+| `StorageTimeoutException` | `STORAGE_TIMEOUT` | Operation timeout exceeded |
+| `StorageCorruptionException` | `STORAGE_CORRUPTION` | Data corruption detected |
+| `StorageUnsupportedException` | `STORAGE_UNSUPPORTED` | Unsupported operation for this backend |
+| `StorageStateException` | `STORAGE_STATE` | Invalid state (e.g., not initialized) |
+| `StorageTransactionException` | `STORAGE_TRANSACTION` | Transaction commit/rollback failures |
+| `StoragePermissionException` | `STORAGE_PERMISSION` | Permission denied |
+| `StorageOperationException` | `STORAGE_OPERATION` | General operation failures |
+
+### Exception Usage Examples
+
+#### 1. StorageInitializationException
+
+**When to use:** Database/storage fails to initialize
+
+```dart
+@override
+Future<void> initialize() async {
+  try {
+    _database = await openDatabase('app.db');
+  } catch (e) {
+    throw StorageInitializationException(
+      message: 'Failed to initialize database',
+      originalError: e,
+      stackTrace: StackTrace.current,
+    );
+  }
+}
+```
+
+#### 2. StorageNotFoundException
+
+**When to use:** Entity or table doesn't exist
+
+```dart
+@override
+Future<User?> get(String id) async {
+  final result = await _db.query('users', where: 'id = ?', whereArgs: [id]);
+  
+  if (result.isEmpty) {
+    throw StorageNotFoundException(
+      message: 'User with id $id not found',
+      entityId: id,
+    );
+  }
+  
+  return User.fromMap(result.first);
+}
+```
+
+#### 3. StorageConstraintException
+
+**When to use:** Unique constraint, foreign key violation, etc.
+
+```dart
+@override
+Future<void> create(User user) async {
+  try {
+    await _db.insert('users', user.toMap());
+  } on DatabaseException catch (e) {
+    if (e.isUniqueConstraintError()) {
+      throw StorageConstraintException(
+        message: 'User with email ${user.email} already exists',
+        constraintName: 'unique_email',
+        originalError: e,
+      );
+    }
+    rethrow;
+  }
+}
+```
+
+#### 4. StorageSpaceException
+
+**When to use:** Disk full or quota exceeded
+
+```dart
+@override
+Future<void> create(LargeFile file) async {
+  try {
+    await _writeFile(file);
+  } on FileSystemException catch (e) {
+    if (e.message.contains('No space left')) {
+      throw StorageSpaceException(
+        message: 'Insufficient disk space to save file',
+        requiredBytes: file.size,
+        availableBytes: await _getAvailableSpace(),
+        originalError: e,
+      );
+    }
+    rethrow;
+  }
+}
+```
+
+#### 5. StorageTimeoutException
+
+**When to use:** Operation exceeds time limit
+
+```dart
+@override
+Future<List<User>> getAll() async {
+  try {
+    return await _db.query('users')
+        .timeout(Duration(seconds: 30));
+  } on TimeoutException catch (e) {
+    throw StorageTimeoutException(
+      message: 'Query timed out after 30 seconds',
+      timeoutDuration: Duration(seconds: 30),
+      originalError: e,
+    );
+  }
+}
+```
+
+#### 6. StorageCorruptionException
+
+**When to use:** Data integrity check fails
+
+```dart
+@override
+Future<User> get(String id) async {
+  final json = await _prefs.getString('user_$id');
+  
+  try {
+    return User.fromJson(jsonDecode(json));
+  } on FormatException catch (e) {
+    throw StorageCorruptionException(
+      message: 'Corrupted user data for id $id',
+      affectedKeys: ['user_$id'],
+      originalError: e,
+    );
+  }
+}
+```
+
+#### 7. StorageUnsupportedException
+
+**When to use:** Operation not supported by backend
+
+```dart
+@override
+Future<void> createTable(String tableName) async {
+  throw StorageUnsupportedException(
+    message: 'SharedPreferences does not support table creation',
+    operation: 'createTable',
+    storageType: 'SharedPreferences',
+  );
+}
+```
+
+#### 8. StorageStateException
+
+**When to use:** Invalid state for operation
+
+```dart
+@override
+Future<User?> get(String id) async {
+  if (!isInitialized) {
+    throw StorageStateException(
+      message: 'Storage not initialized. Call initialize() first',
+      currentState: 'not_initialized',
+      expectedState: 'initialized',
+    );
+  }
+  
+  return await _db.query('users', where: 'id = ?', whereArgs: [id]);
+}
+```
+
+#### 9. StorageTransactionException
+
+**When to use:** Transaction commit/rollback fails
+
+```dart
+@override
+Future<void> commit() async {
+  try {
+    await _transaction.commit();
+  } catch (e) {
+    throw StorageTransactionException(
+      message: 'Failed to commit transaction',
+      transactionId: _transactionId,
+      operation: 'commit',
+      originalError: e,
+    );
+  }
+}
+```
+
+#### 10. StoragePermissionException
+
+**When to use:** Access denied to storage
+
+```dart
+@override
+Future<void> initialize() async {
+  try {
+    _file = await File(_path).create();
+  } on FileSystemException catch (e) {
+    if (e.osError?.errorCode == 13) { // Permission denied
+      throw StoragePermissionException(
+        message: 'Permission denied to create storage file',
+        path: _path,
+        requiredPermission: 'write',
+        originalError: e,
+      );
+    }
+    rethrow;
+  }
+}
+```
+
+#### 11. StorageOperationException
+
+**When to use:** General storage operation failures
+
+```dart
+@override
+Future<void> update(User user) async {
+  try {
+    final count = await _db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
+    
+    if (count == 0) {
+      throw StorageOperationException(
+        message: 'Failed to update user: not found',
+        operation: 'update',
+        entityId: user.id,
+      );
+    }
+  } catch (e) {
+    throw StorageOperationException(
+      message: 'Update operation failed',
+      operation: 'update',
+      originalError: e,
+    );
+  }
+}
+```
+
+### Exception Best Practices
+
+#### 1. Always Wrap Backend Exceptions
+
+✅ **DO**: Convert backend-specific exceptions to storage exceptions
+
+```dart
+try {
+  await _hive.put(key, value);
+} on HiveError catch (e) {
+  throw StorageOperationException(
+    message: 'Failed to store value',
+    operation: 'set',
+    originalError: e,
+  );
+}
+```
+
+❌ **DON'T**: Let backend exceptions leak to calling code
+
+```dart
+await _hive.put(key, value); // HiveError exposed!
+```
+
+#### 2. Preserve Original Error
+
+Always include the original error and stack trace:
+
+```dart
+throw StorageException(
+  message: 'User-friendly message',
+  originalError: e,           // ✅ Preserve original
+  stackTrace: StackTrace.current,  // ✅ Capture stack trace
+);
+```
+
+#### 3. Use Specific Exception Types
+
+✅ **DO**: Use the most specific exception type
+
+```dart
+if (user == null) {
+  throw StorageNotFoundException(/* ... */);  // Specific
+}
+```
+
+❌ **DON'T**: Use generic exceptions for everything
+
+```dart
+if (user == null) {
+  throw StorageOperationException(/* ... */);  // Too generic
+}
+```
+
+#### 4. Provide Context
+
+Include relevant context in exception messages:
+
+```dart
+throw StorageNotFoundException(
+  message: 'User with id $userId not found in table "users"',  // ✅ Context
+  entityId: userId,        // ✅ Metadata
+  tableName: 'users',      // ✅ Additional info
+);
+```
+
+### Exception Handling Patterns
+
+#### Pattern 1: Try-Catch-Rethrow
+
+```dart
+@override
+Future<void> create(User user) async {
+  try {
+    await _backend.insert(user);
+  } on BackendException catch (e) {
+    throw StorageOperationException(
+      message: 'Failed to create user',
+      operation: 'create',
+      originalError: e,
+    );
+  }
+}
+```
+
+#### Pattern 2: State Validation
+
+```dart
+@override
+Future<T?> get(ID id) async {
+  if (!isInitialized) {
+    throw StorageStateException(
+      message: 'Storage must be initialized',
+      currentState: 'not_initialized',
+      expectedState: 'initialized',
+    );
+  }
+  
+  if (isDisposed) {
+    throw StorageStateException(
+      message: 'Storage has been disposed',
+      currentState: 'disposed',
+      expectedState: 'initialized',
+    );
+  }
+  
+  // Proceed with operation
+}
+```
+
+#### Pattern 3: Resource Cleanup
+
+```dart
+@override
+Future<void> dispose() async {
+  try {
+    await _database?.close();
+    await _controller.close();
+  } catch (e) {
+    throw StorageOperationException(
+      message: 'Failed to dispose storage resources',
+      operation: 'dispose',
+      originalError: e,
+    );
+  } finally {
+    _isDisposed = true;
+  }
+}
+```
+
+### Testing Exceptions
+
+```dart
+test('get throws StorageNotFoundException when user not found', () async {
+  final storage = UserStorage();
+  await storage.initialize();
+  
+  expect(
+    () => storage.get('non_existent_id'),
+    throwsA(isA<StorageNotFoundException>()
+        .having((e) => e.message, 'message', contains('not found'))
+        .having((e) => e.code, 'code', 'STORAGE_NOT_FOUND')),
+  );
+});
+
+test('create throws StorageConstraintException on duplicate', () async {
+  final storage = UserStorage();
+  await storage.initialize();
+  
+  final user = User(id: '1', email: 'test@example.com');
+  await storage.create(user);
+  
+  expect(
+    () => storage.create(user),
+    throwsA(isA<StorageConstraintException>()),
+  );
+});
+```
+
+### Complete Exception Reference
+
+For detailed exception documentation including all properties, usage patterns, and implementation guidelines, see:
+
+📖 **[EXCEPTION_GUIDE.md](../lib/src/storage/EXCEPTION_GUIDE.md)** - Complete exception handling guide
 
 ---
 
