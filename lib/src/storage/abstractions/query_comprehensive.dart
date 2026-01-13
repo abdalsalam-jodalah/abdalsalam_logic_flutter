@@ -479,9 +479,7 @@ class Aggregation {
   final String? field;
 
   /// Count of entities.
-  const Aggregation.count()
-      : type = AggregationType.count,
-        field = null;
+  const Aggregation.count() : type = AggregationType.count, field = null;
 
   /// Sum of field values.
   const Aggregation.sum(this.field) : type = AggregationType.sum;
@@ -500,13 +498,7 @@ class Aggregation {
 }
 
 /// Type of aggregation function.
-enum AggregationType {
-  count,
-  sum,
-  avg,
-  min,
-  max,
-}
+enum AggregationType { count, sum, avg, min, max }
 
 /// Join condition for relational queries.
 class JoinCondition {
@@ -535,4 +527,41 @@ enum JoinType {
 
   /// Full outer join - all entities from both sides.
   fullOuter,
+}
+
+/// Query filter for internal use by query builders.
+class QueryFilter {
+  final String field;
+  final FilterOperator operator;
+  final dynamic value;
+  final bool isCaseSensitive;
+
+  QueryFilter(
+    this.field,
+    this.operator,
+    this.value, {
+    this.isCaseSensitive = true,
+  });
+}
+
+/// Filter operators for query conditions.
+enum FilterOperator {
+  equals,
+  notEquals,
+  greaterThan,
+  greaterThanOrEqual,
+  lessThan,
+  lessThanOrEqual,
+  between,
+  inList,
+  notInList,
+  contains,
+  startsWith,
+  endsWith,
+  matches,
+  isNull,
+  isNotNull,
+  arrayContains,
+  arrayContainsAny,
+  custom,
 }
