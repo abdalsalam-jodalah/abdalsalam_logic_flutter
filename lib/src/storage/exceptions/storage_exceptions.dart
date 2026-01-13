@@ -31,15 +31,12 @@ abstract class StorageException implements Exception {
 /// - Initialization timeout
 class StorageInitializationException extends StorageException {
   StorageInitializationException({
-    required String message,
+    required super.message,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
-    message: message,
     code: code ?? 'STORAGE_INIT_FAILED',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -56,13 +53,11 @@ class StorageNotFoundException extends StorageException {
     required this.identifier,
     String? message,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
     message: message ?? 'Item not found: $identifier',
     code: code ?? 'NOT_FOUND',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -77,16 +72,13 @@ class StorageConstraintException extends StorageException {
   final String? constraint;
 
   StorageConstraintException({
-    required String message,
+    required super.message,
     this.constraint,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
-    message: message,
     code: code ?? 'CONSTRAINT_VIOLATION',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -98,15 +90,12 @@ class StorageConstraintException extends StorageException {
 /// - Cannot allocate more space
 class StorageSpaceException extends StorageException {
   StorageSpaceException({
-    required String message,
+    required super.message,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
-    message: message,
     code: code ?? 'INSUFFICIENT_SPACE',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -120,16 +109,13 @@ class StorageTimeoutException extends StorageException {
   final Duration? timeout;
 
   StorageTimeoutException({
-    required String message,
+    required super.message,
     this.timeout,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
-    message: message,
     code: code ?? 'OPERATION_TIMEOUT',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -142,15 +128,12 @@ class StorageTimeoutException extends StorageException {
 /// - Unrecoverable data error
 class StorageCorruptionException extends StorageException {
   StorageCorruptionException({
-    required String message,
+    required super.message,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
-    message: message,
     code: code ?? 'DATA_CORRUPTION',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -167,13 +150,11 @@ class StorageUnsupportedException extends StorageException {
     required this.operation,
     String? message,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
     message: message ?? 'Operation not supported: $operation',
     code: code ?? 'UNSUPPORTED_OPERATION',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -186,15 +167,12 @@ class StorageUnsupportedException extends StorageException {
 /// - Inconsistent state
 class StorageStateException extends StorageException {
   StorageStateException({
-    required String message,
+    required super.message,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
-    message: message,
     code: code ?? 'INVALID_STATE',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -206,15 +184,12 @@ class StorageStateException extends StorageException {
 /// - Transaction context mismatch
 class StorageTransactionException extends StorageException {
   StorageTransactionException({
-    required String message,
+    required super.message,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
-    message: message,
     code: code ?? 'TRANSACTION_FAILED',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -226,15 +201,12 @@ class StorageTransactionException extends StorageException {
 /// - Authentication failed
 class StoragePermissionException extends StorageException {
   StoragePermissionException({
-    required String message,
+    required super.message,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
-    message: message,
     code: code ?? 'PERMISSION_DENIED',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
 
@@ -247,14 +219,11 @@ class StorageOperationException extends StorageException {
 
   StorageOperationException({
     required this.operation,
-    required String message,
+    required super.message,
     String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
-    message: message,
     code: code ?? 'OPERATION_FAILED',
-    originalError: originalError,
-    stackTrace: stackTrace,
   );
 }
