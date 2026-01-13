@@ -1,8 +1,8 @@
 # Storage Abstraction Layer - Quick Index
 
 **Location**: `lib/src/storage/`  
-**Status**: ✅ Complete - Pure Dart, No Implementations  
-**Date**: January 6, 2026
+**Status**: ✅ Complete - Implementations + Full Catalog System
+**Date**: January 13, 2026
 
 ## 📚 Documentation
 
@@ -10,6 +10,63 @@
 2. **[STORAGE_ABSTRACTION.md](STORAGE_ABSTRACTION.md)** - Complete architecture guide
 3. **[RESPONSIBILITY_MATRIX.md](RESPONSIBILITY_MATRIX.md)** - Who does what, required vs optional
 4. **[README.md](README.md)** (this file)
+
+## 🗄️ Storage Catalog System
+
+**NEW: Automatic Table of Tables**
+
+A special `_storage_catalog` table that automatically tracks all your tables and key-value stores:
+
+### Features
+- **Auto-Discovery**: Automatically finds and registers existing tables
+- **Auto-Registration**: Optionally registers new tables when created
+- **Comprehensive Tracking**: Names, types, counts, sizes, dates, metadata
+- **Statistics**: Real-time stats with one-command refresh
+- **Search & Query**: Find tables by name, type, or modification date
+
+### Catalog Table Schema
+```sql
+CREATE TABLE _storage_catalog (
+  name TEXT PRIMARY KEY,              -- Table/storage name
+  type TEXT NOT NULL,                 -- 'table', 'key_value', 'collection'
+  item_count INTEGER DEFAULT 0,       -- Number of rows/items
+  size_in_bytes INTEGER,              -- Storage size
+  created_at TEXT NOT NULL,           -- Creation timestamp
+  last_modified_at TEXT NOT NULL,     -- Last modification
+  last_stats_update TEXT NOT NULL,    -- Stats refresh time
+  schema_version INTEGER,             -- Schema version if applicable
+  metadata TEXT,                      -- Custom metadata (JSON)
+  statistics TEXT                     -- Additional stats (JSON)
+);
+```
+
+### Quick Usage
+```dart
+// Mix into your storage
+class MyStorage extends Storage with StorageCatalogMixin {
+  // ...
+}
+
+// Initialize with auto-registration
+await storage.initializeCatalog(autoRegister: true);
+
+// Creates table and auto-registers
+await storage.createTable('users', schema: schema);
+
+// Get summary anytime
+print(await storage.getCatalogSummary());
+// Output:
+// === Storage Catalog Summary ===
+// Total Storages: 5
+// Total Items: 1,234
+// Total Size: 256.7 KB
+// 
+// By Type:
+//   table: 3 storages, 1,000 items
+//   key_value: 2 storages, 234 items
+```
+
+See [storage_catalog_example.dart](../examples/storage_catalog_example.dart) for complete usage.
 
 ## 🎯 Core Abstractions
 
@@ -325,16 +382,26 @@ All implementations will be interchangeable, following the same contract.
     - Atomic migration execution with rollback
     - MigrationPlan and MigrationStep support
 
+13. **StorageCatalogMixin** (676 lines) ⭐ NEW
+    - Location: [implementations/storage_catalog_mixin.dart](implementations/storage_catalog_mixin.dart)
+    - Automatic "table of tables" tracking system
+    - Auto-discovery of existing tables
+    - Auto-registration when enabled
+    - Real-time statistics and metadata
+    - Search and query capabilities
+    - Summary reports and analytics
+
 ### Implementation Statistics
-- **Total Implementation Code**: ~2,036 lines
+- **Total Implementation Code**: ~2,700+ lines
 - **Zero External Dependencies**: All logger references removed
 - **Compilation Errors**: 0 (all implementations complete and working)
 - **Mixin Composition**: Flexible capability selection via mixins
 - **Production Ready**: All backends functional with comprehensive features
+- **Catalog System**: Automatic tracking of all storage tables and statistics
 
 ### Usage Example
 ```dart
-// SQLite with all capabilities
+// SQLite with all capabilities including catalog
 class MyStorage extends SQLiteStorage<User>
     with
         BatchEntityOperationsMixin,
@@ -343,13 +410,19 @@ class MyStorage extends SQLiteStorage<User>
         ExpirableEntityStorageMixin,
         QueryableStorageMixin,
         TableManagementMixin,
-        PredicateDeletableMixin {
+        PredicateDeletableMixin,
+        StorageCatalogMixin {
   // Automatically inherits all capability methods
 }
 
-// Use any combination of capabilities
+// Initialize with catalog auto-registration
 final storage = MyStorage();
 await storage.initialize();
+await storage.initializeCatalog(autoRegister: true);
+
+// All table operations are automatically tracked
+await storage.createTable('users', schema: userSchema);
+await storage.createTable('posts', schema: postSchema);
 
 // Batch operations
 await storage.createMultipleBatch([user1, user2, user3]);
@@ -376,6 +449,17 @@ await storage.transaction((txn) async {
 // Table management
 await storage.createTable('users', schema: mySchema);
 await storage.createIndex('users', 'idx_email', ['email'], unique: true);
+
+// Get catalog summary
+print(await storage.getCatalogSummary());
+// === Storage Catalog Summary ===
+// Total Storages: 5
+// Total Items: 1,234
+// Total Size: 256.7 KB
+
+// Search catalog
+final userTables = await storage.searchCatalog('user');
+final stats = await storage.getTotalStats();
 ```
 
 ## 📝 License
