@@ -21,11 +21,122 @@
 
 ---
 
+## Storage Architecture - Simple Tree View
+
+```
+                                   Storage (Base)
+                                   initialize()
+                                   dispose()
+                                   clear()
+                                        │
+                ┌───────────────────────┼───────────────────────┐
+                │                       │                       │
+                ▼                       ▼                       ▼
+            
+        ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+        │  KeyValueStorage │    │  EntityStorage   │    │  Capabilities    │
+        │   (Simple Pairs) │    │ (Structured Tab) │    │  (Optional)      │
+        └────────┬─────────┘    └────────┬─────────┘    └────────┬─────────┘
+                 │                       │                        │
+        ┌────────┴────────┐     ┌────────┴────────┐      ┌────────┴─────────┐
+        │                 │     │                 │      │                  │
+        ▼                 ▼     ▼                 ▼      ▼                  ▼
+    
+  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+  │  MINIMAL     │  │COMPREHENSIVE │  │  MINIMAL     │  │COMPREHENSIVE │
+  │  (5 methods) │  │ (18 methods) │  │  (8 methods) │  │ (22 methods) │
+  │              │  │              │  │              │  │              │
+  │ ✅ get()     │  │ ✅ get() ... │  │ ✅ get() ... │  │ ✅ get() ... │
+  │ ✅ set()     │  │ ✅ getAll()  │  │ ✅ create()  │  │ ✅ upsert()  │
+  │ ✅ delete()  │  │ ✅ count()   │  │ ✅ update()  │  │ ✅ getPage() │
+  │ ✅ contains()│  │ ✅ ...       │  │ ✅ delete()  │  │ ✅ ...       │
+  │ ✅ keys()    │  │              │  │ ✅ ...       │  │              │
+  │              │  │              │  │              │  │              │
+  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘
+
+
+                           OPTIONAL CAPABILITIES
+                    (Implement only what you need)
+                    
+        ┌──────────────────────────────────────────────────────┐
+        │                                                      │
+        ▼                                                      ▼
+    
+    FOR KEY-VALUE STORAGE              FOR ENTITY STORAGE
+    ┌────────────────────┐             ┌────────────────────┐
+    │ 📦 Batch           │             │ 📦 Batch           │
+    │ 👁️  Watchable      │             │ 👁️  Watchable      │
+    │ ⏰ Expirable       │             │ 🔍 Queryable       │
+    │                    │             │ 🔒 Versioned       │
+    │                    │             │ ➕ Upsertable      │
+    │                    │             │ 🗑️  Predicate Del  │
+    └────────────────────┘             └────────────────────┘
+    
+    
+    FOR ANY STORAGE
+    ┌──────────────────────────────────────────────────────┐
+    │ 💱 TransactionalStorage    🔄 Refreshable           │
+    │ 📋 SchemaAwareStorage      🚀 MigratableStorage     │
+    └──────────────────────────────────────────────────────┘
+
+
+                        SUPPORTING CLASSES & MODELS
+                    (Helper objects for methods above)
+                    
+    ┌─────────────────────────────────────────────────────────┐
+    │ StorageMetadata  │  KeyValueMetadata  │  EntityMetadata │
+    │ StorageException │  EntityQuery<T>    │  StorageTransaction
+    │ SavePoint        │  PagedResult<T>    │  IsolationLevel
+    │ SchemaDescriptor │  MigrationPlan     │  ...
+    └─────────────────────────────────────────────────────────┘
+
+
+                          CONCRETE IMPLEMENTATIONS
+                         (Ready-to-use examples)
+                         
+    ┌──────────────────────────────────────────────────────┐
+    │ ✅ SharedPreferencesStorage    │ ✅ SqliteStorageImpl<T>
+    │ ✅ HiveStorageImpl<T>           │
+    └──────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Overview
 
 ### What is This?
 
 A **comprehensive, type-safe abstraction layer** for storage management in Flutter/Dart applications. It provides a unified interface for all storage backends while maintaining flexibility through capability-based design.
+
+### Simple Explanation
+
+| Component | What It Does | Example |
+|-----------|-------------|---------|
+| **Storage (Base)** | All storage MUST implement this | Every storage has `initialize()` and `dispose()` |
+| **KeyValueStorage<T>** | Simple key-value pairs (no schema) | Settings, preferences, tokens |
+| **EntityStorage<ID, T>** | Structured objects with schema | Users table, Products table, Messages |
+| **Capabilities** | Optional extra features you add | Batch ops, Real-time watching, Queries, Transactions |
+
+### Example: Building a User Storage
+
+```dart
+// Step 1: Choose base type (EntityStorage for structured data)
+class UserStorage implements EntityStorage<String, User> {
+  // Must implement: get, create, update, delete, getAll
+}
+
+// Step 2: Add only the capabilities you need
+class UserStorage 
+    implements 
+      EntityStorage<String, User>,          // Base: CRUD
+      BatchEntityStorage<String, User>,     // + Batch operations
+      WatchableEntityStorage<String, User>, // + Real-time updates
+      QueryableStorage<User> {              // + Advanced search
+  // Now you can: do bulk creates, listen for changes, search with filters
+}
+```
+
+---
 
 ### Key Features
 
@@ -872,14 +983,486 @@ final user = await storage.get(userId);
 
 ---
 
+## Complete Method Reference Tables
+
+### Table 1: Storage Interface (Base)
+
+All storage implementations must extend this base interface.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `initialize()` | `Future<void>` | Initialize the storage backend |
+| `clear()` | `Future<void>` | Clear all data from storage |
+| `dispose()` | `Future<void>` | Dispose and cleanup resources |
+| `getMetadata()` | `StorageMetadata?` | Get storage metadata and capabilities |
+| **Properties** | | |
+| `isInitialized` | `bool` | Whether storage is initialized |
+| `isDisposed` | `bool` | Whether storage is disposed |
+
+---
+
+### Table 2: KeyValueStorage<T> (Minimal)
+
+Minimal key-value storage interface - essential operations only.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| **Single Operations** | | |
+| `get(key)` | `Future<T?>` | Get value by key |
+| `set(key, value)` | `Future<void>` | Set value for key |
+| `delete(key)` | `Future<bool>` | Delete key (returns true if existed) |
+| `contains(key)` | `Future<bool>` | Check if key exists |
+| `keys()` | `Future<List<String>>` | Get all keys in storage |
+
+---
+
+### Table 3: KeyValueStorage<T> (Comprehensive)
+
+Full-featured key-value storage with all operations.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| **Single Operations** | | |
+| `get(key)` | `Future<T?>` | Get value by key |
+| `getOrDefault(key, defaultValue)` | `Future<T>` | Get value or return default |
+| `set(key, value)` | `Future<void>` | Set value for key |
+| `setIfAbsent(key, value)` | `Future<bool>` | Set only if key doesn't exist |
+| `setIfPresent(key, value)` | `Future<bool>` | Set only if key exists |
+| `delete(key)` | `Future<bool>` | Delete key |
+| `contains(key)` | `Future<bool>` | Check if key exists |
+| **Batch Operations** | | |
+| `getMultiple(keys)` | `Future<Map<String, T>>` | Get multiple values at once |
+| `setMultiple(entries)` | `Future<void>` | Set multiple key-value pairs |
+| `deleteMultiple(keys)` | `Future<int>` | Delete multiple keys |
+| **Key Enumeration** | | |
+| `keys()` | `Future<List<String>>` | Get all keys |
+| `getAll()` | `Future<Map<String, T>>` | Get all key-value pairs |
+| `count()` | `Future<int>` | Count total keys |
+| `isEmpty()` | `Future<bool>` | Check if storage is empty |
+| **Key Search** | | |
+| `keysWithPrefix(prefix)` | `Future<List<String>>` | Get keys with specific prefix |
+| `keysMatching(pattern)` | `Future<List<String>>` | Get keys matching pattern |
+| **Metadata** | | |
+| `getKeyMetadata(key)` | `Future<KeyValueMetadata?>` | Get metadata for specific key |
+| `getStorageMetadata()` | `StorageMetadata?` | Get storage implementation metadata |
+
+---
+
+### Table 4: EntityStorage<ID, T> (Minimal)
+
+Minimal entity storage interface - essential CRUD operations.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `getEntityId(entity)` | `ID` | Extract ID from entity (must implement) |
+| **CRUD Operations** | | |
+| `get(id)` | `Future<T?>` | Get entity by ID |
+| `create(entity)` | `Future<void>` | Create new entity |
+| `update(entity)` | `Future<void>` | Update existing entity |
+| `delete(id)` | `Future<bool>` | Delete entity by ID |
+| `contains(id)` | `Future<bool>` | Check if entity exists |
+| **Bulk Operations** | | |
+| `getAll()` | `Future<List<T>>` | Get all entities |
+| `count()` | `Future<int>` | Count total entities |
+
+---
+
+### Table 5: EntityStorage<ID, T> (Comprehensive)
+
+Full-featured entity storage with all operations.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `getEntityId(entity)` | `ID` | Extract ID from entity (must implement) |
+| **Single Operations** | | |
+| `get(id)` | `Future<T?>` | Get entity by ID |
+| `create(entity)` | `Future<void>` | Create new entity |
+| `update(entity)` | `Future<void>` | Update existing entity |
+| `upsert(entity)` | `Future<void>` | Create or update entity |
+| `delete(id)` | `Future<bool>` | Delete entity by ID |
+| `contains(id)` | `Future<bool>` | Check if entity exists |
+| **Partial Updates** | | |
+| `updatePartial(id, updates)` | `Future<void>` | Update specific fields only |
+| `incrementField(id, field, delta)` | `Future<num>` | Atomically increment numeric field |
+| **Batch Operations** | | |
+| `getMultiple(ids)` | `Future<List<T>>` | Get multiple entities at once |
+| `createMultiple(entities)` | `Future<void>` | Create multiple entities |
+| `updateMultiple(entities)` | `Future<void>` | Update multiple entities |
+| `upsertMultiple(entities)` | `Future<void>` | Create or update multiple entities |
+| `deleteMultiple(ids)` | `Future<int>` | Delete multiple entities |
+| **Bulk Retrieval** | | |
+| `getAll()` | `Future<List<T>>` | Get all entities |
+| `getPage(offset, limit)` | `Future<List<T>>` | Get paginated results |
+| `count()` | `Future<int>` | Count total entities |
+| `isEmpty()` | `Future<bool>` | Check if storage is empty |
+| **Metadata** | | |
+| `getEntityMetadata(id)` | `Future<EntityMetadata?>` | Get metadata for entity |
+| `getStorageMetadata()` | `StorageMetadata?` | Get storage implementation metadata |
+
+---
+
+### Table 6: Optional Capability - BatchKeyValueStorage<T>
+
+Efficient batch operations for key-value storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `getMultiple(keys)` | `Future<Map<String, T>>` | Get multiple values efficiently |
+| `setMultiple(entries)` | `Future<void>` | Set multiple key-value pairs |
+| `deleteMultiple(keys)` | `Future<int>` | Delete multiple keys |
+
+---
+
+### Table 7: Optional Capability - BatchEntityStorage<ID, T>
+
+Efficient batch operations for entity storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `getMultiple(ids)` | `Future<List<T>>` | Get multiple entities efficiently |
+| `createMultiple(entities)` | `Future<void>` | Create multiple entities |
+| `updateMultiple(entities)` | `Future<void>` | Update multiple entities |
+| `deleteMultiple(ids)` | `Future<int>` | Delete multiple entities |
+
+---
+
+### Table 8: Optional Capability - UpsertableEntityStorage<ID, T>
+
+Create-or-update semantics for entity storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `upsert(entity)` | `Future<void>` | Create if new, update if exists |
+
+---
+
+### Table 9: Optional Capability - WatchableKeyValueStorage<T>
+
+Real-time change notifications for key-value storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `watch(key)` | `Stream<KeyValueChange<T>?>` | Watch changes to specific key |
+| `watchPrefix(prefix)` | `Stream<KeyValueChange<T>>` | Watch changes to keys with prefix |
+| `watchAll()` | `Stream<KeyValueChange<T>>` | Watch all storage changes |
+
+---
+
+### Table 10: Optional Capability - WatchableEntityStorage<ID, T>
+
+Real-time change notifications for entity storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `watch(id)` | `Stream<EntityChange<ID, T>?>` | Watch changes to specific entity |
+| `watchAll()` | `Stream<EntityChange<ID, T>>` | Watch all entity changes |
+| `watchQuery(query)` | `Stream<EntityChange<ID, T>>` | Watch entities matching query |
+
+---
+
+### Table 11: Optional Capability - ExpirableKeyValueStorage<T>
+
+Time-to-live (TTL) support for key-value storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `setWithExpiration(key, value, duration)` | `Future<void>` | Set value with automatic expiration |
+| `setExpiration(key, duration)` | `Future<bool>` | Set expiration for existing key |
+| `getTimeToLive(key)` | `Future<Duration?>` | Get remaining time until expiration |
+| `removeExpiration(key)` | `Future<bool>` | Remove expiration (persist indefinitely) |
+
+---
+
+### Table 12: Optional Capability - VersionedEntityStorage<ID, T>
+
+Optimistic locking support for entity storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `updateWithVersion(entity, expectedVersion)` | `Future<bool>` | Update only if version matches |
+| `getWithVersion(id)` | `Future<VersionedEntity<T>?>` | Get entity with version number |
+
+---
+
+### Table 13: Optional Capability - PredicateDeletableStorage<ID, T>
+
+Predicate-based deletion for entity storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `deleteWhere(predicate)` | `Future<int>` | Delete all entities matching predicate |
+
+---
+
+### Table 14: Optional Capability - TransactionalStorage
+
+Transaction support for atomic operations.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `beginTransaction()` | `Future<StorageTransaction>` | Begin a new transaction |
+
+**StorageTransaction Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `commit()` | `Future<void>` | Commit all transaction changes |
+| `rollback()` | `Future<void>` | Rollback all transaction changes |
+| `execute(operation)` | `Future<T>` | Execute operations in transaction context |
+| `savepoint(name)` | `Future<SavePoint>` | Create a savepoint for nested rollback |
+| `rollbackToSavepoint(savepoint)` | `Future<void>` | Rollback to specific savepoint |
+| **Properties** | | |
+| `isActive` | `bool` | Whether transaction is active |
+| `isCommitted` | `bool` | Whether transaction is committed |
+| `isRolledBack` | `bool` | Whether transaction is rolled back |
+| `isolationLevel` | `IsolationLevel` | Transaction isolation level |
+
+---
+
+### Table 15: Optional Capability - QueryableStorage<T>
+
+Advanced query support for entity storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `query()` | `Future<StorageQuery<T>>` | Create a query builder |
+
+**EntityQuery<T> Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| **Filtering** | | |
+| `where(field, {operators...})` | `EntityQuery<T>` | Add filter condition |
+| `or(conditions)` | `EntityQuery<T>` | Combine filters with OR logic |
+| `whereCustom(predicate)` | `EntityQuery<T>` | Add custom filter predicate |
+| **Sorting** | | |
+| `orderBy(field, {descending, nullsFirst})` | `EntityQuery<T>` | Sort by field |
+| `orderByMultiple(fields)` | `EntityQuery<T>` | Sort by multiple fields |
+| **Pagination** | | |
+| `limit(count)` | `EntityQuery<T>` | Limit number of results |
+| `offset(count)` | `EntityQuery<T>` | Skip number of results |
+| `startAfterCursor(cursor)` | `EntityQuery<T>` | Cursor-based pagination |
+| **Execution** | | |
+| `execute()` | `Future<List<T>>` | Execute query and get results |
+| `executeFirst()` | `Future<T?>` | Execute and get first result |
+| `executeCount()` | `Future<int>` | Execute and get count only |
+| **Aggregations** | | |
+| `sum(field)` | `Future<num>` | Sum numeric field |
+| `avg(field)` | `Future<double>` | Average of numeric field |
+| `min(field)` | `Future<T?>` | Minimum value |
+| `max(field)` | `Future<T?>` | Maximum value |
+| **Field Projection** | | |
+| `select(fields)` | `EntityQuery<T>` | Select specific fields only |
+| `exclude(fields)` | `EntityQuery<T>` | Exclude specific fields |
+| **Grouping** | | |
+| `groupBy(field)` | `EntityQuery<T>` | Group results by field |
+
+**Available Where Operators:**
+- `isEqualTo`, `isNotEqualTo`
+- `isGreaterThan`, `isGreaterThanOrEqualTo`
+- `isLessThan`, `isLessThanOrEqualTo`
+- `isBetween`, `isNotBetween`
+- `isIn`, `isNotIn`
+- `contains`, `startsWith`, `endsWith`, `matches`
+- `isNull`, `isNotNull`
+- `arrayContains`, `arrayContainsAny`
+
+---
+
+### Table 16: Optional Capability - SchemaAwareStorage
+
+Schema management for structured storage.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `getSchema()` | `Future<SchemaDescriptor>` | Get current storage schema |
+| `applySchema(schema)` | `Future<void>` | Apply schema changes |
+| `validateSchema(expected)` | `Future<bool>` | Validate schema compatibility |
+
+---
+
+### Table 17: Optional Capability - MigratableStorage
+
+Schema migration support.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `migrate(plan)` | `Future<void>` | Execute migration plan |
+| **Properties** | | |
+| `schemaVersion` | `int` | Current schema version |
+
+---
+
+### Table 18: Optional Capability - RefreshableStorage
+
+Explicit refresh/sync support.
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `refresh()` | `Future<void>` | Refresh storage from source |
+| `getModifiedSince(date)` | `Future<List<dynamic>>` | Get entities modified after date |
+
+---
+
+## Implementation Status: Abstract vs Concrete
+
+### What This Package Provides
+
+#### 📋 **Abstract Interfaces (No Implementation)**
+These are pure interfaces that YOU must implement for your specific backend:
+
+**Base Interfaces:**
+- `Storage` - Base lifecycle interface (4 methods + 2 properties)
+- `KeyValueStorage<T>` - Key-value storage interface (5-18 methods)
+- `EntityStorage<ID, T>` - Entity storage interface (8-22 methods)
+
+**Optional Capability Interfaces:**
+- `TransactionalStorage` - Transaction support
+- `QueryableStorage<T>` - Advanced query support  
+- `WatchableKeyValueStorage<T>` - Key-value change notifications
+- `WatchableEntityStorage<ID, T>` - Entity change notifications
+- `ExpirableKeyValueStorage<T>` - TTL/expiration support
+- `VersionedEntityStorage<ID, T>` - Optimistic locking
+- `PredicateDeletableStorage<ID, T>` - Predicate-based deletion
+- `SchemaAwareStorage` - Schema management
+- `MigratableStorage` - Migration support
+- `RefreshableStorage` - Explicit refresh/sync
+- `BatchKeyValueStorage<T>` - Batch key-value operations
+- `BatchEntityStorage<ID, T>` - Batch entity operations
+- `UpsertableEntityStorage<ID, T>` - Upsert operations
+
+**Supporting Classes:**
+- `StorageTransaction` - Transaction abstraction
+- `EntityQuery<T>` - Query builder
+- `StorageMetadata`, `KeyValueMetadata`, `EntityMetadata` - Metadata models
+- All exception classes in `storage_exceptions.dart`
+
+#### ✅ **Concrete Implementations (Ready to Use)**
+
+The package provides **3 example implementations** that you can use or customize:
+
+**1. SharedPreferencesStorage** (implements `StorageService`)
+```dart
+✅ initialize()
+✅ dispose()
+✅ get<T>(key)
+✅ set<T>(key, value)
+✅ remove(key)
+✅ clear()
+✅ containsKey(key)
+✅ getAll()
+```
+**Status**: Fully implemented basic key-value storage using SharedPreferences  
+**Methods**: 8 concrete methods
+
+**2. SqliteStorageImpl<T>** (implements `SqliteStorage<T>`)
+```dart
+✅ initialize(createTableSql)
+✅ dispose()
+✅ get(id)
+✅ getAll()
+✅ create(entity)
+✅ update(entity)
+✅ delete(id)
+✅ clear()
+✅ toMap(entity)
+✅ fromMap(map)
+```
+**Status**: Fully implemented entity storage using SQLite  
+**Methods**: 10 concrete methods
+
+**3. HiveStorageImpl<T>** (implements `HiveStorage<T>`)
+```dart
+✅ initialize()
+✅ dispose()
+✅ get(id)
+✅ getAll()
+✅ create(entity)
+✅ update(entity)
+✅ delete(id)
+✅ clear()
+```
+**Status**: Fully implemented entity storage using Hive  
+**Methods**: 8 concrete methods
+
+### What YOU Need to Implement
+
+To use the storage abstraction layer, you must:
+
+1. **Choose an interface** based on your needs:
+   - `KeyValueStorage<T>` for simple key-value storage
+   - `EntityStorage<ID, T>` for structured entity storage
+
+2. **Implement the interface** for your backend:
+   ```dart
+   class MyCustomStorage implements KeyValueStorage<String> {
+     // Implement all required methods
+     @override
+     Future<String?> get(String key) async {
+       // Your implementation
+     }
+     // ... implement other methods
+   }
+   ```
+
+3. **Optionally add capabilities** by implementing additional interfaces:
+   ```dart
+   class MyAdvancedStorage 
+       implements KeyValueStorage<String>, 
+                  WatchableKeyValueStorage<String>,
+                  ExpirableKeyValueStorage<String> {
+     // Implement all methods from all interfaces
+   }
+   ```
+
+### Summary by Storage Type
+
+### Core Storage Types
+
+| Storage Type | Total Methods | Description |
+|--------------|---------------|-------------|
+| **Storage (Base)** | 4 methods + 2 properties | Base lifecycle management |
+| **KeyValueStorage<T> (Minimal)** | 5 methods | Essential key-value operations |
+| **KeyValueStorage<T> (Comprehensive)** | 18 methods | Full-featured key-value storage |
+| **EntityStorage<ID, T> (Minimal)** | 8 methods | Essential entity CRUD |
+| **EntityStorage<ID, T> (Comprehensive)** | 22 methods | Full-featured entity storage |
+
+### Optional Capabilities (Opt-in)
+
+| Capability | Methods | Use Case |
+|------------|---------|----------|
+| **BatchKeyValueStorage<T>** | 3 methods | Efficient batch key-value operations |
+| **BatchEntityStorage<ID, T>** | 4 methods | Efficient batch entity operations |
+| **UpsertableEntityStorage<ID, T>** | 1 method | Create-or-update semantics |
+| **WatchableKeyValueStorage<T>** | 3 methods | Real-time key-value change notifications |
+| **WatchableEntityStorage<ID, T>** | 3 methods | Real-time entity change notifications |
+| **ExpirableKeyValueStorage<T>** | 4 methods | TTL/expiration support |
+| **VersionedEntityStorage<ID, T>** | 2 methods | Optimistic locking |
+| **PredicateDeletableStorage<ID, T>** | 1 method | Predicate-based deletion |
+| **TransactionalStorage** | 1 method + Transaction (6 methods) | Atomic transactions |
+| **QueryableStorage<T>** | 1 method + Query (20+ methods) | Advanced filtering and queries |
+| **SchemaAwareStorage** | 3 methods | Schema management |
+| **MigratableStorage** | 1 method + 1 property | Schema migrations |
+| **RefreshableStorage** | 2 methods | Explicit refresh/sync |
+
+### Total Method Count
+
+- **Base + Core Interfaces**: ~59 methods
+- **Optional Capabilities**: ~50+ methods
+- **Query DSL**: 20+ query builder methods
+- **Transaction API**: 6 transaction methods
+- **Grand Total**: **135+ methods** covering all storage operations
+
+---
+
 ## Summary
 
 This storage abstraction layer provides:
 
-✅ **91+ methods** for comprehensive storage operations  
+✅ **135+ methods** for comprehensive storage operations  
 ✅ **Type-safe** interfaces with generics  
 ✅ **Backend-agnostic** - works with any implementation  
 ✅ **Capability-based** - opt-in to features you need  
 ✅ **Production-ready** - battle-tested patterns  
 
-**Start simple**, add capabilities as needed, and swap backends without changing your app code.
+**Start simple** with minimal interfaces (5-8 methods), add capabilities as needed, and swap backends without changing your app code.
