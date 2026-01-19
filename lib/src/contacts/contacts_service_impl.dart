@@ -1,21 +1,16 @@
 // lib/src/contacts/contacts_service_impl.dart
 // import 'package:contacts_service/contacts_service.dart' as contacts;
-import '../logging/logger_service.dart';
 import 'contacts_service.dart';
 
 class ContactsServiceImpl implements ContactsService {
-  final LoggerService _logger;
-
-  ContactsServiceImpl(this._logger);
+  ContactsServiceImpl();
 
   @override
   Future<void> initialize() async {
-    _logger.info('Contacts service initialized');
   }
 
   @override
   Future<void> dispose() async {
-    _logger.info('Contacts service disposed');
   }
 
   @override
@@ -36,7 +31,6 @@ class ContactsServiceImpl implements ContactsService {
       //     .toList();
       return [];
     } catch (e) {
-      _logger.error('Failed to get contacts', error: e);
       return [];
     }
   }
@@ -61,7 +55,6 @@ class ContactsServiceImpl implements ContactsService {
       // };
       return null;
     } catch (e) {
-      _logger.error('Failed to get contact: $identifier', error: e);
       return null;
     }
   }
@@ -84,9 +77,7 @@ class ContactsServiceImpl implements ContactsService {
       //       [],
       // );
       // await contacts.ContactsService.addContact(newContact);
-      _logger.info('Contact added successfully');
     } catch (e) {
-      _logger.error('Failed to add contact', error: e);
       rethrow;
     }
   }
@@ -121,9 +112,7 @@ class ContactsServiceImpl implements ContactsService {
       // updatedContact.identifier = contact.identifier;
       //
       // await contacts.ContactsService.updateContact(updatedContact);
-      _logger.info('Contact updated: $identifier');
     } catch (e) {
-      _logger.error('Failed to update contact', error: e);
       rethrow;
     }
   }
@@ -137,9 +126,7 @@ class ContactsServiceImpl implements ContactsService {
       //   orElse: () => throw Exception('Contact not found'),
       // );
       // await contacts.ContactsService.deleteContact(contact);
-      _logger.info('Contact deleted: $identifier');
     } catch (e) {
-      _logger.error('Failed to delete contact', error: e);
       rethrow;
     }
   }
@@ -150,7 +137,6 @@ class ContactsServiceImpl implements ContactsService {
       // await contacts.ContactsService.getContacts();
       return true;
     } catch (e) {
-      _logger.error('Failed to request contacts permission', error: e);
       return false;
     }
   }

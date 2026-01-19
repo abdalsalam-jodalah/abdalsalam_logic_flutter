@@ -1,47 +1,35 @@
 // lib/src/fcm/fcm_service_impl.dart
 import 'package:firebase_messaging/firebase_messaging.dart';
-import '../logging/logger_service.dart';
 import 'fcm_service.dart';
 
 class FcmServiceImpl implements FcmService {
-  final LoggerService _logger;
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
-  FcmServiceImpl(this._logger);
+  FcmServiceImpl();
 
   @override
   Future<void> initialize() async {
     try {
-      final settings = await _firebaseMessaging.requestPermission(
+      await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        _logger.info('FCM permission granted');
-      } else {
-        _logger.warning('FCM permission denied');
-      }
-
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     } catch (e) {
-      _logger.error('Failed to initialize FCM', error: e);
       rethrow;
     }
   }
 
   @override
-  Future<void> dispose() async {
-    _logger.info('FCM service disposed');
-  }
+  Future<void> dispose() async {}
 
   @override
   Future<String?> getToken() async {
     try {
       return await _firebaseMessaging.getToken();
     } catch (e) {
-      _logger.error('Failed to get FCM token', error: e);
       return null;
     }
   }
@@ -50,9 +38,7 @@ class FcmServiceImpl implements FcmService {
   Future<void> subscribeToTopic(String topic) async {
     try {
       await _firebaseMessaging.subscribeToTopic(topic);
-      _logger.info('Subscribed to topic: $topic');
     } catch (e) {
-      _logger.error('Failed to subscribe to topic: $topic', error: e);
       rethrow;
     }
   }
@@ -61,9 +47,7 @@ class FcmServiceImpl implements FcmService {
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
-      _logger.info('Unsubscribed from topic: $topic');
     } catch (e) {
-      _logger.error('Failed to unsubscribe from topic: $topic', error: e);
       rethrow;
     }
   }

@@ -1,17 +1,15 @@
 // lib/src/networking/api_client_impl.dart
 import 'package:dio/dio.dart';
 import '../core/errors/app_exception.dart';
-import '../logging/logger_service.dart';
 import 'api_client.dart';
 
 class ApiClientImpl implements ApiClient {
-  final LoggerService _logger;
   late Dio _dio;
   String? _baseUrl;
   String? _authToken;
   Map<String, String> _defaultHeaders = {};
 
-  ApiClientImpl(this._logger) {
+  ApiClientImpl() {
     _dio = Dio();
     _setupInterceptors();
   }
@@ -24,22 +22,12 @@ class ApiClientImpl implements ApiClient {
             options.headers['Authorization'] = 'Bearer $_authToken';
           }
           options.headers.addAll(_defaultHeaders);
-          _logger.debug(
-            'Request: ${options.method} ${options.path}',
-          );
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          _logger.debug(
-            'Response: ${response.statusCode} ${response.requestOptions.path}',
-          );
           return handler.next(response);
         },
         onError: (error, handler) {
-          _logger.error(
-            'API Error: ${error.message}',
-            error: error,
-          );
           return handler.next(error);
         },
       ),

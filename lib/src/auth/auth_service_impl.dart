@@ -1,17 +1,14 @@
 // lib/src/auth/auth_service_impl.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/errors/app_exception.dart';
-import '../logging/logger_service.dart';
 import '../storage/storage_service.dart';
 import 'auth_service.dart';
 
 class AuthServiceImpl implements AuthService {
-  final LoggerService _logger;
   final StorageService _storageService;
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   AuthServiceImpl(
-    this._logger,
     this._storageService,
   );
 
@@ -19,9 +16,7 @@ class AuthServiceImpl implements AuthService {
   Future<void> initialize() async {
     _firebaseAuth.authStateChanges().listen((user) {
       if (user != null) {
-        _logger.info('User authenticated: ${user.uid}');
       } else {
-        _logger.info('User signed out');
       }
     });
   }
@@ -99,9 +94,7 @@ class AuthServiceImpl implements AuthService {
       await _firebaseAuth.signOut();
       await _storageService.remove('auth_token');
       await _storageService.remove('user_id');
-      _logger.info('User signed out');
     } catch (e) {
-      _logger.error('Sign out failed', error: e);
       rethrow;
     }
   }
@@ -157,7 +150,6 @@ class AuthServiceImpl implements AuthService {
         await _storageService.set('auth_token', token);
       }
     } catch (e) {
-      _logger.error('Token refresh failed', error: e);
       rethrow;
     }
   }

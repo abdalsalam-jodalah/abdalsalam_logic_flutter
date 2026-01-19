@@ -1,22 +1,15 @@
 // lib/src/share/share_service_impl.dart
 import 'package:share_plus/share_plus.dart';
-import '../logging/logger_service.dart';
 import 'share_service.dart';
 
 class ShareServiceImpl implements ShareService {
-  final LoggerService _logger;
-
-  ShareServiceImpl(this._logger);
+  ShareServiceImpl();
 
   @override
-  Future<void> initialize() async {
-    _logger.info('Share service initialized');
-  }
+  Future<void> initialize() async {}
 
   @override
-  Future<void> dispose() async {
-    _logger.info('Share service disposed');
-  }
+  Future<void> dispose() async {}
 
   @override
   Future<void> shareText(String text, {String? subject}) async {
@@ -25,9 +18,7 @@ class ShareServiceImpl implements ShareService {
         text,
         subject: subject,
       );
-      _logger.info('Text shared successfully');
     } catch (e) {
-      _logger.error('Failed to share text', error: e);
       rethrow;
     }
   }
@@ -40,9 +31,7 @@ class ShareServiceImpl implements ShareService {
         [file],
         text: text,
       );
-      _logger.info('File shared successfully: $filePath');
     } catch (e) {
-      _logger.error('Failed to share file: $filePath', error: e);
       rethrow;
     }
   }
@@ -58,9 +47,7 @@ class ShareServiceImpl implements ShareService {
         files,
         text: text,
       );
-      _logger.info('Multiple files shared successfully');
     } catch (e) {
-      _logger.error('Failed to share multiple files', error: e);
       rethrow;
     }
   }

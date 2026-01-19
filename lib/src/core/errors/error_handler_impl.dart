@@ -1,21 +1,14 @@
 // lib/src/core/errors/error_handler_impl.dart
 import 'app_exception.dart';
 import 'error_handler.dart';
-import '../../logging/logger_service.dart';
 
 class ErrorHandlerImpl implements ErrorHandler {
-  final LoggerService _logger;
-
-  ErrorHandlerImpl(this._logger);
+  ErrorHandlerImpl();
 
   @override
   void handleError(dynamic error, {StackTrace? stackTrace}) {
-    final appException = parseError(error);
-    _logger.error(
-      'Error occurred: ${appException.message}',
-      error: error,
-      stackTrace: stackTrace,
-    );
+    // Parse error and handle - consumers can implement custom logging
+    parseError(error);
   }
 
   @override

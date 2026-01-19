@@ -1,6 +1,5 @@
 // lib/src/app_initialization/app_initializer_impl.dart
 import '../app_state/app_state_manager.dart';
-import '../logging/logger_service.dart';
 import '../storage/storage_service.dart';
 import '../networking/api_client.dart';
 import '../auth/auth_service.dart';
@@ -9,7 +8,6 @@ import 'app_initializer.dart';
 
 class AppInitializerImpl implements AppInitializer {
   final AppStateManager _appStateManager;
-  final LoggerService _logger;
   final StorageService _storageService;
   final ApiClient _apiClient;
   final AuthService _authService;
@@ -17,7 +15,6 @@ class AppInitializerImpl implements AppInitializer {
 
   AppInitializerImpl(
     this._appStateManager,
-    this._logger,
     this._storageService,
     this._apiClient,
     this._authService,
@@ -27,54 +24,83 @@ class AppInitializerImpl implements AppInitializer {
   @override
   Future<void> initialize() async {
     try {
-      _logger.info('Starting app initialization...');
-      
       await _appStateManager.initialize();
-      await initializeServices();
-      await initializeStorage();
-      await initializeNetworking();
-      await initializeAuth();
-      await initializeFCM();
-      
-      _logger.info('App initialization completed successfully');
     } catch (e) {
-      _logger.error('App initialization failed', error: e);
-      rethrow;
+      throw Exception('Failed to initialize app state manager: $e');
+    }
+
+    try {
+      await initializeServices();
+    } catch (e) {
+      throw Exception('Failed to initialize services: $e');
+    }
+
+    try {
+      await initializeStorage();
+    } catch (e) {
+      throw Exception('Failed to initialize storage: $e');
+    }
+
+    try {
+      await initializeNetworking();
+    } catch (e) {
+      throw Exception('Failed to initialize networking: $e');
+    }
+
+    try {
+      await initializeAuth();
+    } catch (e) {
+      throw Exception('Failed to initialize authentication: $e');
+    }
+
+    try {
+      await initializeFCM();
+    } catch (e) {
+      throw Exception('Failed to initialize FCM: $e');
     }
   }
 
   @override
-  Future<void> initializeServices() async {
-    _logger.info('Initializing services...');
-  }
+  Future<void> initializeServices() async {}
 
   @override
   Future<void> initializeStorage() async {
-    _logger.info('Initializing storage...');
-    await _storageService.initialize();
+    try {
+      await _storageService.initialize();
+    } catch (e) {
+      throw Exception('Storage service initialization failed: $e');
+    }
   }
 
   @override
   Future<void> initializeNetworking() async {
-    _logger.info('Initializing networking...');
-    await _apiClient.initialize();
+    try {
+      await _apiClient.initialize();
+    } catch (e) {
+      throw Exception('API client initialization failed: $e');
+    }
   }
 
   @override
   Future<void> initializeAuth() async {
-    _logger.info('Initializing auth...');
-    await _authService.initialize();
+    try {
+      await _authService.initialize();
+    } catch (e) {
+      throw Exception('Authentication service initialization failed: $e');
+    }
   }
 
   @override
   Future<void> initializeFCM() async {
-    _logger.info('Initializing FCM...');
-    await _fcmService.initialize();
+    try {
+      await _fcmService.initialize();
+    } catch (e) {
+      throw Exception('FCM service initialization failed: $e');
+    }
   }
 
   @override
   Future<void> dispose() async {
-    _logger.info('Disposing app initializer...');
     await _storageService.dispose();
     await _apiClient.dispose();
     await _authService.dispose();
