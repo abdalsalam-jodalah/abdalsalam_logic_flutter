@@ -5,7 +5,14 @@ export 'src/core/errors/error_handler_impl.dart';
 export 'src/core/interfaces/repository_interface.dart';
 export 'src/core/interfaces/service_interface.dart';
 
-export 'src/logging/logger_service.dart';
+export 'src/logging/logger.dart';
+export 'src/logging/logger_impl.dart';
+export 'src/logging/log_config.dart';
+export 'src/logging/log_level.dart';
+export 'src/logging/log_module.dart';
+export 'src/logging/log_formatter.dart';
+export 'src/logging/log_output.dart';
+export 'src/logging/log_filter.dart';
 
 export 'src/app_state/app_state_manager.dart';
 export 'src/app_state/app_state_manager_impl.dart';
