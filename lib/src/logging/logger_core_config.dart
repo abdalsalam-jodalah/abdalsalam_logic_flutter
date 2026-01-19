@@ -18,70 +18,19 @@ class LoggerCoreConfig {
     required this.environment,
     required this.environmentLevels,
     required this.targetsPerEnvironment,
-    this.allowUnregisteredModules = true,
-    this.strictMode = false,
+    required this.allowUnregisteredModules,
+    required this.strictMode,
   });
 
-  factory LoggerCoreConfig.simple({
-    LogEnvironment? environment,
-    LogLevel? globalLevel,
-    Set<LogTarget>? targets,
-    bool allowUnregisteredModules = true,
-    bool strictMode = false,
-  }) {
-    final env = environment ?? _detectEnvironment();
-    final level = globalLevel ?? LogLevel.info;
-    final defaultTargets = targets ?? {LogTarget.console};
-
-    return LoggerCoreConfig(
-      environment: env,
-      environmentLevels: {
-        LogEnvironment.development: level,
-        LogEnvironment.profile: level,
-        LogEnvironment.release: level,
-      },
-      targetsPerEnvironment: {
-        LogEnvironment.development: defaultTargets,
-        LogEnvironment.profile: defaultTargets,
-        LogEnvironment.release: defaultTargets,
-      },
-      allowUnregisteredModules: allowUnregisteredModules,
-      strictMode: strictMode,
-    );
-  }
-
-  factory LoggerCoreConfig.recommended() {
-    final currentEnv = _detectEnvironment();
-
-    return LoggerCoreConfig(
-      environment: currentEnv,
-      environmentLevels: {
-        LogEnvironment.development: LogLevel.trace,
-        LogEnvironment.profile: LogLevel.debug,
-        LogEnvironment.release: LogLevel.error,
-      },
-      targetsPerEnvironment: {
-        LogEnvironment.development: {LogTarget.console},
-        LogEnvironment.profile: {LogTarget.console, LogTarget.file},
-        LogEnvironment.release: {LogTarget.file, LogTarget.remote},
-      },
-      allowUnregisteredModules: true,
-      strictMode: false,
-    );
-  }
-
-  static LogEnvironment detectEnvironment() {
-    if (kReleaseMode) return LogEnvironment.release;
-    if (kProfileMode) return LogEnvironment.profile;
-    return LogEnvironment.development;
-  }
-
-  static LogEnvironment _detectEnvironment() {
-    return detectEnvironment();
-  }
-
   LogLevel getLevelForEnvironment(LogEnvironment env) {
-    return environmentLevels[env] ?? LogLevel.info;
+    final level = environmentLevels[env];
+    if (level == null) {
+      throw StateError(
+        'No log level configured for environment: ${env.name}. '
+        'You must explicitly configure log levels for all environments.',
+      );
+    }
+    return level;
   }
 
   LogLevel getLevelForCurrentEnvironment() {
@@ -89,7 +38,14 @@ class LoggerCoreConfig {
   }
 
   Set<LogTarget> getTargetsForEnvironment(LogEnvironment env) {
-    return targetsPerEnvironment[env] ?? {LogTarget.console};
+    final targets = targetsPerEnvironment[env];
+    if (targets == null || targets.isEmpty) {
+      throw StateError(
+        'No log targets configured for environment: ${env.name}. '
+        'You must explicitly configure targets for all environments.',
+      );
+    }
+    return targets;
   }
 
   Set<LogTarget> getTargetsForCurrentEnvironment() {

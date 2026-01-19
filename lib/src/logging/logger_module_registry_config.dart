@@ -14,37 +14,11 @@ class LoggerModuleRegistryConfig {
 
   const LoggerModuleRegistryConfig({
     required this.globalLevel,
-    this.enableColors = true,
-    this.modules = const {},
+    required this.enableColors,
+    required this.modules,
     this.disabledModuleTypes,
     this.disabledLevels,
   });
-
-  factory LoggerModuleRegistryConfig.minimal({
-    LogLevel? globalLevel,
-    bool enableColors = true,
-  }) {
-    return LoggerModuleRegistryConfig(
-      globalLevel: globalLevel ?? LogLevel.info,
-      enableColors: enableColors,
-    );
-  }
-
-  factory LoggerModuleRegistryConfig.withModules({
-    required LogLevel globalLevel,
-    required Map<String, LogModuleConfig> modules,
-    bool enableColors = true,
-    Set<ModuleType>? disabledModuleTypes,
-    Set<LogLevel>? disabledLevels,
-  }) {
-    return LoggerModuleRegistryConfig(
-      globalLevel: globalLevel,
-      enableColors: enableColors,
-      modules: modules,
-      disabledModuleTypes: disabledModuleTypes,
-      disabledLevels: disabledLevels,
-    );
-  }
 
   bool isModuleTypeEnabled(ModuleType type) {
     return disabledModuleTypes?.contains(type) != true;
