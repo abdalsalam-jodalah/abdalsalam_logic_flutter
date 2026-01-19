@@ -34,35 +34,30 @@ import 'models/network_info.dart';
 import 'models/accessibility_info.dart';
 import 'models/memory_info.dart';
 import 'models/permissions_info.dart';
-import '../logging/logger_service.dart';
 
 class AppStateManagerImpl
     with WidgetsBindingObserver
     implements AppStateManager {
   static AppStateManagerImpl? _instance;
 
-  factory AppStateManagerImpl.create(
-    LoggerService logger, {
+  factory AppStateManagerImpl.create({
     AppStateConfig? config,
   }) {
-    _instance ??= AppStateManagerImpl._internal(logger, config ?? const AppStateConfig());
+    _instance ??= AppStateManagerImpl._internal(config ?? const AppStateConfig());
     return _instance!;
   }
 
-  AppStateManagerImpl._internal(this._logger, this._config);
+  AppStateManagerImpl._internal(this._config);
 
   final AppStateConfig _config;
 
   static AppStateManagerImpl get instance {
     if (_instance == null) {
-      throw StateError(
-        'AppStateManagerImpl not initialized. Call create() first.',
-      );
+      throw StateError('AppStateManager not initialized. Call create() first');
     }
     return _instance!;
   }
 
-  final LoggerService _logger;
   final Connectivity _connectivity = Connectivity();
   final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
   final bp.Battery _battery = bp.Battery();
@@ -317,33 +312,142 @@ class AppStateManagerImpl
   @override
   Future<void> initialize() async {
     if (_isInitialized) {
-      _logger.warning('AppStateManager already initialized');
       return;
     }
 
-    _logger.info('Initializing AppStateManager with config: $_config');
-
-    WidgetsBinding.instance.addObserver(this);
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (e) {
+      throw Exception('Failed to add widgets binding observer: $e');
+    }
 
     // Core features (always initialized if enabled)
-    if (_config.enableDeviceInfo) await _initializeDeviceInfo();
-    if (_config.enableConnectivity) await _initializeConnectivity();
-    await _initializeLocale();
+    if (_config.enableDeviceInfo) {
+      try {
+        await _initializeDeviceInfo();
+      } catch (e) {
+        throw Exception('Failed to initialize device info: $e');
+      }
+    }
+    
+    if (_config.enableConnectivity) {
+      try {
+        await _initializeConnectivity();
+      } catch (e) {
+        throw Exception('Failed to initialize connectivity: $e');
+      }
+    }
+    
+    try {
+      await _initializeLocale();
+    } catch (e) {
+      throw Exception('Failed to initialize locale: $e');
+    }
     
     // Optional features (only initialized if enabled)
-    if (_config.enableAccessibility) _initializeAccessibilityInfo();
-    if (_config.enableNetworkType) _initializeNetworkInfo();
-    if (_config.enablePermissions) await _initializePermissions();
-    if (_config.enableOrientation) await _initializeOrientation();
-    if (_config.enableAppVersion) await _initializeAppVersion();
-    if (_config.enableStorage) await _initializeStorageInfo();
-    if (_config.enableScreenMetrics) await _initializeScreenMetrics();
-    if (_config.enableWiFi) await _initializeWiFiInfo();
-    if (_config.enableMobileData) await _initializeMobileDataInfo();
-    if (_config.enableBattery) await _initializeBatteryInfo();
-    if (_config.enableAudio) await _initializeAudioState();
-    if (_config.enableMemory) await _initializeMemoryInfo();
-    if (_config.enableSystemSettings) await _initializeSystemSettings();
+    if (_config.enableAccessibility) {
+      try {
+        _initializeAccessibilityInfo();
+      } catch (e) {
+        throw Exception('Failed to initialize accessibility info: $e');
+      }
+    }
+    
+    if (_config.enableNetworkType) {
+      try {
+        _initializeNetworkInfo();
+      } catch (e) {
+        throw Exception('Failed to initialize network info: $e');
+      }
+    }
+    
+    if (_config.enablePermissions) {
+      try {
+        await _initializePermissions();
+      } catch (e) {
+        throw Exception('Failed to initialize permissions: $e');
+      }
+    }
+    
+    if (_config.enableOrientation) {
+      try {
+        await _initializeOrientation();
+      } catch (e) {
+        throw Exception('Failed to initialize orientation: $e');
+      }
+    }
+    
+    if (_config.enableAppVersion) {
+      try {
+        await _initializeAppVersion();
+      } catch (e) {
+        throw Exception('Failed to initialize app version: $e');
+      }
+    }
+    
+    if (_config.enableStorage) {
+      try {
+        await _initializeStorageInfo();
+      } catch (e) {
+        throw Exception('Failed to initialize storage info: $e');
+      }
+    }
+    
+    if (_config.enableScreenMetrics) {
+      try {
+        await _initializeScreenMetrics();
+      } catch (e) {
+        throw Exception('Failed to initialize screen metrics: $e');
+      }
+    }
+    
+    if (_config.enableWiFi) {
+      try {
+        await _initializeWiFiInfo();
+      } catch (e) {
+        throw Exception('Failed to initialize WiFi info: $e');
+      }
+    }
+    
+    if (_config.enableMobileData) {
+      try {
+        await _initializeMobileDataInfo();
+      } catch (e) {
+        throw Exception('Failed to initialize mobile data info: $e');
+      }
+    }
+    
+    if (_config.enableBattery) {
+      try {
+        await _initializeBatteryInfo();
+      } catch (e) {
+        throw Exception('Failed to initialize battery info: $e');
+      }
+    }
+    
+    if (_config.enableAudio) {
+      try {
+        await _initializeAudioState();
+      } catch (e) {
+        throw Exception('Failed to initialize audio state: $e');
+      }
+    }
+    
+    if (_config.enableMemory) {
+      try {
+        await _initializeMemoryInfo();
+      } catch (e) {
+        throw Exception('Failed to initialize memory info: $e');
+      }
+    }
+    
+    if (_config.enableSystemSettings) {
+      try {
+        await _initializeSystemSettings();
+      } catch (e) {
+        throw Exception('Failed to initialize system settings: $e');
+      }
+    }
     
     // Initialize VPN info if enabled
     if (_config.enableVPN) {
@@ -362,7 +466,6 @@ class AppStateManagerImpl
     }
 
     _isInitialized = true;
-    _logger.info('AppStateManager initialized successfully');
   }
 
   @override
@@ -469,13 +572,7 @@ class AppStateManagerImpl
       );
 
       _deviceController.add(_deviceInfo_!);
-      _logger.info('Device info initialized');
     } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize device info',
-        error: error,
-        stackTrace: stackTrace,
-      );
     }
   }
 
@@ -542,15 +639,8 @@ class AppStateManagerImpl
       );
 
       _deviceController.add(_deviceInfo_!);
-      _logger.debug(
-        'Device metrics updated: ${orientation.name}, ${breakpoint.name}, ${size.width}x${size.height}',
-      );
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to update device info on metrics change',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('Failed to update device info on metrics change: $e');
     }
   }
 
@@ -575,12 +665,8 @@ class AppStateManagerImpl
               : lifecycle.ConnectivityState.offline,
         );
       });
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize connectivity monitoring',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('Connectivity initialization failed: $e');
     }
   }
 
@@ -591,7 +677,6 @@ class AppStateManagerImpl
     );
 
     _stateController.add(_currentState);
-    _logger.debug('App state updated to ${lifecycleState.name}');
   }
 
   void _updateConnectivity(lifecycle.ConnectivityState connectivity) {
@@ -604,7 +689,6 @@ class AppStateManagerImpl
     );
 
     _stateController.add(_currentState);
-    _logger.info('Connectivity changed to ${connectivity.name}');
   }
 
   void _updateFocus(lifecycle.AppFocusState focus) {
@@ -617,7 +701,6 @@ class AppStateManagerImpl
     );
 
     _stateController.add(_currentState);
-    _logger.info('Focus changed to ${focus.name}');
   }
 
   lifecycle.AppLifecycleState _combineStates(
@@ -657,20 +740,14 @@ class AppStateManagerImpl
   }
 
   void _handleAppResume() {
-    _logger.info('App resumed, validating services...');
     unawaited(_validateServicesOnResume());
   }
 
   Future<void> _validateServicesOnResume() async {
     try {
       await Future.wait([_reinitializeConnectivity()]);
-      _logger.info('Services validated successfully on resume');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to validate services on resume',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('Failed to validate services on resume: $e');
     }
   }
 
@@ -683,11 +760,8 @@ class AppStateManagerImpl
             ? lifecycle.ConnectivityState.online
             : lifecycle.ConnectivityState.offline,
       );
-      _logger.debug(
-        'Connectivity revalidated on resume: ${isOnline ? "online" : "offline"}',
-      );
-    } catch (error) {
-      _logger.warning('Failed to revalidate connectivity on resume: $error');
+    } catch (e) {
+      throw Exception('Failed to reinitialize connectivity: $e');
     }
   }
 
@@ -695,14 +769,12 @@ class AppStateManagerImpl
   void updateNavigation(String route, {Map<String, dynamic>? params}) {
     _navigationState = _navigationState.pushRoute(route, params: params);
     _navController.add(_navigationState);
-    _logger.debug('Navigation updated to $route');
   }
 
   @override
   void updateTab(int tabIndex, String route) {
     _navigationState = _navigationState.updateTab(tabIndex, route);
     _navController.add(_navigationState);
-    _logger.debug('Tab updated to $tabIndex -> $route');
   }
 
   @override
@@ -711,7 +783,6 @@ class AppStateManagerImpl
 
     _themeMode = themeMode;
     _themeController.add(_themeMode);
-    _logger.info('Theme changed to ${themeMode.name}');
   }
 
   Future<void> _initializeLocale() async {
@@ -726,16 +797,10 @@ class AppStateManagerImpl
       );
       _localeController.add(_localeInfo);
 
-      _logger.info(
-        'Locale initialized: current=${initialLocale.languageCode}, device=${deviceLocale?.languageCode}',
-      );
-    } catch (e, stackTrace) {
-      _logger.error(
-        'Failed to initialize locale',
-        error: e,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      // Fallback to English if device locale fails
       _localeInfo = LocaleInfo.fromLocale(const Locale('en'));
+      _localeController.add(_localeInfo);
     }
   }
 
@@ -744,7 +809,6 @@ class AppStateManagerImpl
       final locales = WidgetsBinding.instance.platformDispatcher.locales;
       return locales.isNotEmpty ? locales.first : null;
     } catch (e) {
-      _logger.error('Failed to get device locale', error: e);
       return null;
     }
   }
@@ -760,30 +824,24 @@ class AppStateManagerImpl
 
     _localeInfo = newLocaleInfo;
     _localeController.add(_localeInfo);
-    _logger.info('Locale changed to ${locale?.languageCode ?? 'system'}');
   }
 
   @override
   void updateAuthInfo(AuthInfo authInfo) {
     _authInfo = authInfo;
     _authController.add(_authInfo);
-    _logger.info('Auth state updated: ${authInfo.status.name}');
   }
 
   @override
   void updatePermission(PermissionInfo permissionInfo) {
     _permissionsInfo = _permissionsInfo.updatePermission(permissionInfo);
     _permissionsController.add(_permissionsInfo);
-    _logger.info(
-      'Permission updated: ${permissionInfo.type.name} - ${permissionInfo.status.name}',
-    );
   }
 
   @override
   void updatePermissions(List<PermissionInfo> permissions) {
     _permissionsInfo = _permissionsInfo.updatePermissions(permissions);
     _permissionsController.add(_permissionsInfo);
-    _logger.info('Permissions updated: ${permissions.length} permission(s)');
   }
 
   @override
@@ -796,14 +854,12 @@ class AppStateManagerImpl
       lastLoginTime: DateTime.now(),
     );
     _authController.add(_authInfo);
-    _logger.info('User authenticated');
   }
 
   @override
   void setUnauthenticated() {
     _authInfo = AuthInfo.empty();
     _authController.add(_authInfo);
-    _logger.info('User unauthenticated');
   }
 
   void _updateKeyboardInfo() {
@@ -825,12 +881,9 @@ class AppStateManagerImpl
         _keyboardController.add(_keyboardInfo!);
         _previousKeyboardHeight = keyboardHeight;
 
-        _logger.debug(
-          'Keyboard ${isVisible ? "visible" : "hidden"}: height=$keyboardHeight',
-        );
       }
-    } catch (error) {
-      _logger.error('Failed to update keyboard info', error: error);
+    } catch (e) {
+      throw Exception('Failed to update keyboard info: $e');
     }
   }
 
@@ -843,9 +896,8 @@ class AppStateManagerImpl
         timestamp: DateTime.now(),
       );
       _networkController.add(_networkInfo!);
-      _logger.debug('Network info initialized');
-    } catch (error) {
-      _logger.error('Failed to initialize network info', error: error);
+    } catch (e) {
+      throw Exception('Network info initialization failed: $e');
     }
   }
 
@@ -865,13 +917,8 @@ class AppStateManagerImpl
       );
 
       _accessibilityController.add(_accessibilityInfo!);
-      _logger.info('Accessibility features initialized');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize accessibility info',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('Accessibility info initialization failed: $e');
     }
   }
 
@@ -889,7 +936,6 @@ class AppStateManagerImpl
     );
 
     _memoryController.add(_memoryInfo);
-    _logger.warning('Memory pressure: ${level.name}, Used: ${_memoryInfo.usedMemoryMB}, Free: ${_memoryInfo.freeMemoryMB}');
   }
 
   Future<void> _initializePermissions() async {
@@ -947,23 +993,14 @@ class AppStateManagerImpl
             );
           }
         } catch (e) {
-          _logger.warning(
-            'Failed to check permission ${permission.toString()}: $e',
-          );
+          // Permission check failed
         }
       }
 
       _permissionsInfo = updatedPermissions;
       _permissionsController.add(_permissionsInfo);
-      _logger.info(
-        'Permissions initialized: ${_permissionsInfo.permissions.length} permissions tracked',
-      );
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize permissions',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('Permissions initialization failed: $e');
     }
   }
 
@@ -1024,13 +1061,8 @@ class AppStateManagerImpl
   Future<void> _initializeOrientation() async {
     try {
       _updateOrientation();
-      _logger.info('Device orientation initialized');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize orientation',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('Orientation initialization failed: $e');
     }
   }
 
@@ -1051,7 +1083,6 @@ class AppStateManagerImpl
       );
       _deviceOrientationController.add(_deviceOrientationInfo);
     } catch (e) {
-      _logger.warning('Failed to update orientation: $e');
     }
   }
 
@@ -1076,7 +1107,6 @@ class AppStateManagerImpl
       );
       _screenMetricsController.add(_screenMetricsInfo);
     } catch (e) {
-      _logger.warning('Failed to update screen metrics: $e');
     }
   }
 
@@ -1091,15 +1121,8 @@ class AppStateManagerImpl
         timestamp: DateTime.now(),
       );
       _appVersionController.add(_appVersionInfo);
-      _logger.info(
-        'App version info initialized: ${_appVersionInfo.version}+${_appVersionInfo.buildNumber}',
-      );
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize app version',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('App version initialization failed: $e');
     }
   }
 
@@ -1133,13 +1156,8 @@ class AppStateManagerImpl
       }
 
       _storageController.add(_storageInfo);
-      _logger.info('Storage info initialized: ${_storageInfo.totalSpaceGB} total, ${_storageInfo.freeSpaceGB} free');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize storage info',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      // Fallback to initial state if storage info fails
       _storageInfo = StorageInfo.initial();
       _storageController.add(_storageInfo);
     }
@@ -1148,13 +1166,8 @@ class AppStateManagerImpl
   Future<void> _initializeScreenMetrics() async {
     try {
       _updateScreenMetrics();
-      _logger.info('Screen metrics initialized');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize screen metrics',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('Screen metrics initialization failed: $e');
     }
   }
 
@@ -1178,7 +1191,6 @@ class AppStateManagerImpl
             gateway = await _networkInfoPlugin.getWifiGatewayIP();
             subnet = await _networkInfoPlugin.getWifiSubmask();
           } catch (e) {
-            _logger.warning('Failed to get detailed WiFi info: $e');
           }
         }
 
@@ -1200,13 +1212,8 @@ class AppStateManagerImpl
       }
 
       _wifiController.add(_wifiInfo);
-      _logger.info('WiFi info initialized: connected=${_wifiInfo.isConnected}');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize WiFi info',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      // Fallback to initial state if WiFi info fails
       _wifiInfo = WiFiInfo.initial();
       _wifiController.add(_wifiInfo);
     }
@@ -1226,7 +1233,6 @@ class AppStateManagerImpl
             operatorName = await _networkInfoPlugin.getWifiName();
             isoCountryCode = await _networkInfoPlugin.getWifiBSSID();
           } catch (e) {
-            _logger.warning('Failed to get mobile operator info: $e');
           }
         }
 
@@ -1243,13 +1249,8 @@ class AppStateManagerImpl
       }
 
       _mobileDataController.add(_mobileDataInfo);
-      _logger.info('Mobile data info initialized: connected=${_mobileDataInfo.isConnected}');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize mobile data info',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      // Fallback to initial state if mobile data info fails
       _mobileDataInfo = MobileDataInfo.initial();
       _mobileDataController.add(_mobileDataInfo);
     }
@@ -1287,13 +1288,8 @@ class AppStateManagerImpl
         _updateBatteryInfo(state);
       });
 
-      _logger.info('Battery info initialized: level=$batteryLevel%');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize battery info',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      // Battery info not available on this platform
       _batteryInfo = null;
     }
   }
@@ -1326,14 +1322,9 @@ class AppStateManagerImpl
         );
         
         _batteryController.add(_batteryInfo!);
-        _logger.info('Battery info updated: level=$batteryLevel%, state=${state.name}');
       }
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to update battery info',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('Failed to update battery info: $e');
     }
   }
 
@@ -1370,13 +1361,8 @@ class AppStateManagerImpl
         _audioStateController.add(_audioStateInfo);
       });
 
-      _logger.info('Audio state initialized: volume=$volumeLevel');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize audio state',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      // Fallback to initial state if audio state fails
       _audioStateInfo = AudioStateInfo.initial();
       _audioStateController.add(_audioStateInfo);
     }
@@ -1405,13 +1391,8 @@ class AppStateManagerImpl
       );
 
       _memoryController.add(_memoryInfo);
-      _logger.info('Memory info initialized: ${_memoryInfo.usedMemoryMB} / ${_memoryInfo.totalMemoryGB}');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize memory info',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      // Fallback to normal pressure level if memory info fails
       _memoryInfo = MemoryInfo(
         pressureLevel: MemoryPressureLevel.normal,
         timestamp: DateTime.now(),
@@ -1466,7 +1447,6 @@ class AppStateManagerImpl
         'memoryUsagePercentage': null,
       };
     } catch (e) {
-      _logger.error('Failed to get system memory values', error: e);
       return {
         'totalMemory': null,
         'freeMemory': null,
@@ -1491,13 +1471,8 @@ class AppStateManagerImpl
       );
 
       _systemSettingsController.add(_systemSettingsInfo);
-      _logger.info('System settings initialized: darkMode=$isDarkMode');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to initialize system settings',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      // Fallback to initial state if system settings fail
       _systemSettingsInfo = SystemSettingsInfo.initial();
       _systemSettingsController.add(_systemSettingsInfo);
     }
@@ -1534,7 +1509,6 @@ class AppStateManagerImpl
     await _appRuntimeController.close();
 
     _isInitialized = false;
-    _logger.info('AppStateManager disposed');
   }
 
   @override
@@ -1570,7 +1544,6 @@ class AppStateManagerImpl
 
   @override
   Future<void> refreshAll() async {
-    _logger.info('Refreshing all app state...');
     
     try {
       await Future.wait([
@@ -1589,55 +1562,43 @@ class AppStateManagerImpl
         _initializeSystemSettings(),
       ]);
       
-      _logger.info('All app state refreshed successfully');
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to refresh all app state',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (e) {
+      throw Exception('Failed to refresh all app state: $e');
     }
   }
 
   @override
   Future<void> refreshWiFi() async {
-    _logger.info('Refreshing WiFi information...');
     await _initializeWiFiInfo();
   }
 
   @override
   Future<void> refreshMobileData() async {
-    _logger.info('Refreshing mobile data information...');
     await _initializeMobileDataInfo();
   }
 
   @override
   Future<void> refreshBattery() async {
-    _logger.info('Refreshing battery information...');
     await _initializeBatteryInfo();
   }
 
   @override
   Future<void> refreshStorage() async {
-    _logger.info('Refreshing storage information...');
     await _initializeStorageInfo();
   }
 
   @override
   Future<void> refreshAudio() async {
-    _logger.info('Refreshing audio state...');
     await _initializeAudioState();
   }
 
   @override
   Future<void> refreshMemory() async {
-    _logger.info('Refreshing memory information...');
     await _initializeMemoryInfo();
   }
 
   @override
   Future<void> refreshPermissions() async {
-    _logger.info('Refreshing permissions...');
     await _initializePermissions();
   }
 }
