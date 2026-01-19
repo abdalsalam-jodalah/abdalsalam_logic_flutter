@@ -35,7 +35,7 @@ class FileOutput implements LogOutput {
   final int maxFileSizeBytes;
   final int maxBackupFiles;
   final bool enableInRelease;
-  
+
   IOSink? _sink;
   File? _currentFile;
   int _currentFileSize = 0;
@@ -55,7 +55,7 @@ class FileOutput implements LogOutput {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final logsDir = Directory(path.join(directory.path, 'logs'));
-      
+
       if (!await logsDir.exists()) {
         await logsDir.create(recursive: true);
       }
@@ -163,7 +163,9 @@ class RemoteOutput implements LogOutput {
       return;
     }
 
-    final shouldSend = allowedLevels.any((level) => message.contains('[$level]'));
+    final shouldSend = allowedLevels.any(
+      (level) => message.contains('[$level]'),
+    );
     if (!shouldSend) {
       return;
     }
@@ -184,13 +186,15 @@ class RemoteOutput implements LogOutput {
     try {
       final client = HttpClient();
       final request = await client.postUrl(Uri.parse(endpoint));
-      
+
       headers?.forEach((key, value) {
         request.headers.add(key, value);
       });
 
       request.headers.contentType = ContentType.json;
-      request.write('{"logs":${batch.map((log) => '"${_escapeJson(log)}"').toList()}}');
+      request.write(
+        '{"logs":${batch.map((log) => '"${_escapeJson(log)}"').toList()}}',
+      );
 
       final response = await request.close();
       await response.drain();
@@ -214,6 +218,58 @@ class RemoteOutput implements LogOutput {
   Future<void> close() async {
     _flushTimer?.cancel();
     await _flush();
+  }
+}
+
+class MemoryOutput implements LogOutput {
+  final int maxEntries;
+  final List<String> _buffer = [];
+  int _writeIndex = 0;
+  bool _isFull = false;
+
+  MemoryOutput({this.maxEntries = 1000});
+
+  @override
+  void write(String message) {
+    if (_buffer.length < maxEntries) {
+      _buffer.add(message);
+    } else {
+      _buffer[_writeIndex] = message;
+      _writeIndex = (_writeIndex + 1) % maxEntries;
+      _isFull = true;
+    }
+  }
+
+  List<String> getLogs() {
+    if (!_isFull) {
+      return List.unmodifiable(_buffer);
+    }
+
+    final result = <String>[];
+    for (int i = 0; i < maxEntries; i++) {
+      final index = (_writeIndex + i) % maxEntries;
+      result.add(_buffer[index]);
+    }
+    return result;
+  }
+
+  List<String> getRecentLogs(int count) {
+    final allLogs = getLogs();
+    final startIndex = allLogs.length > count ? allLogs.length - count : 0;
+    return allLogs.sublist(startIndex);
+  }
+
+  void clear() {
+    _buffer.clear();
+    _writeIndex = 0;
+    _isFull = false;
+  }
+
+  int get logCount => _buffer.length;
+
+  @override
+  Future<void> close() async {
+    clear();
   }
 }
 

@@ -14,6 +14,9 @@ export 'src/logging/log_formatter.dart';
 export 'src/logging/log_output.dart';
 export 'src/logging/log_filter.dart';
 export 'src/logging/log_environment.dart';
+export 'src/logging/log_target.dart';
+export 'src/logging/logger_core_config.dart';
+export 'src/logging/logger_module_registry_config.dart';
 
 export 'src/app_state/app_state_manager.dart';
 export 'src/app_state/app_state_manager_impl.dart';

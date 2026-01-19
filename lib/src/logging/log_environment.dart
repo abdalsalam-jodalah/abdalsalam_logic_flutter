@@ -1,15 +1,14 @@
 // lib/src/logging/log_environment.dart
 // Environment-specific logging configuration
 
+import 'package:flutter/foundation.dart';
 import 'log_level.dart';
 import 'log_output.dart';
 
-enum LogEnvironment {
-  development,
-  profile,
-  release;
-}
+enum LogEnvironment { development, profile, release }
 
+@Deprecated('Use LoggerCoreConfig and LoggerModuleRegistryConfig instead')
+@immutable
 class EnvironmentLogConfig {
   final LogLevel globalLevel;
   final bool enableColors;
@@ -26,23 +25,4 @@ class EnvironmentLogConfig {
     this.disabledModuleTypes,
     this.disabledLevels,
   });
-
-  EnvironmentLogConfig copyWith({
-    LogLevel? globalLevel,
-    bool? enableColors,
-    List<LogOutput>? outputs,
-    bool? allowUnregisteredModules,
-    Set<ModuleType>? disabledModuleTypes,
-    Set<LogLevel>? disabledLevels,
-  }) {
-    return EnvironmentLogConfig(
-      globalLevel: globalLevel ?? this.globalLevel,
-      enableColors: enableColors ?? this.enableColors,
-      outputs: outputs ?? this.outputs,
-      allowUnregisteredModules:
-          allowUnregisteredModules ?? this.allowUnregisteredModules,
-      disabledModuleTypes: disabledModuleTypes ?? this.disabledModuleTypes,
-      disabledLevels: disabledLevels ?? this.disabledLevels,
-    );
-  }
 }

@@ -1,78 +1,109 @@
 // lib/src/logging/log_config.dart
-// Configuration classes for the logging system
+// Unified configuration for the logging system (backwards compatible + new split architecture)
 
 import 'package:flutter/foundation.dart';
 import 'log_level.dart';
 import 'log_environment.dart';
+import 'logger_core_config.dart';
+import 'logger_module_registry_config.dart';
 
-class LogModuleConfig {
-  final ModuleType type;
-  final bool enabled;
-  final LogLevel? level;
-
-  const LogModuleConfig({
-    required this.type,
-    this.enabled = true,
-    this.level,
-  });
-
-  LogModuleConfig copyWith({
-    ModuleType? type,
-    bool? enabled,
-    LogLevel? level,
-  }) {
-    return LogModuleConfig(
-      type: type ?? this.type,
-      enabled: enabled ?? this.enabled,
-      level: level ?? this.level,
-    );
-  }
-}
-
+@immutable
 class LogConfig {
-  final Map<String, LogModuleConfig> modules;
-  final EnvironmentLogConfig developmentConfig;
-  final EnvironmentLogConfig? profileConfig;
-  final EnvironmentLogConfig? releaseConfig;
+  final LoggerCoreConfig coreConfig;
+  final LoggerModuleRegistryConfig moduleConfig;
 
-  const LogConfig({
-    required this.developmentConfig,
-    this.profileConfig,
-    this.releaseConfig,
-    this.modules = const {},
-  });
+  const LogConfig({required this.coreConfig, required this.moduleConfig});
 
-  EnvironmentLogConfig getConfigForCurrentEnvironment() {
-    if (kReleaseMode) {
-      return releaseConfig ?? developmentConfig;
-    } else if (kProfileMode) {
-      return profileConfig ?? developmentConfig;
-    }
-    return developmentConfig;
+  factory LogConfig.split({
+    required LoggerCoreConfig coreConfig,
+    required LoggerModuleRegistryConfig moduleConfig,
+  }) {
+    return LogConfig(coreConfig: coreConfig, moduleConfig: moduleConfig);
   }
 
-  EnvironmentLogConfig getConfigForEnvironment(LogEnvironment environment) {
-    switch (environment) {
-      case LogEnvironment.development:
-        return developmentConfig;
-      case LogEnvironment.profile:
-        return profileConfig ?? developmentConfig;
-      case LogEnvironment.release:
-        return releaseConfig ?? developmentConfig;
-    }
-  }
-
-  LogConfig copyWith({
+  factory LogConfig.simple({
+    LogLevel? globalLevel,
+    bool enableColors = true,
     Map<String, LogModuleConfig>? modules,
-    EnvironmentLogConfig? developmentConfig,
-    EnvironmentLogConfig? profileConfig,
-    EnvironmentLogConfig? releaseConfig,
+    bool allowUnregisteredModules = true,
+    bool strictMode = false,
   }) {
     return LogConfig(
-      modules: modules ?? this.modules,
-      developmentConfig: developmentConfig ?? this.developmentConfig,
-      profileConfig: profileConfig ?? this.profileConfig,
-      releaseConfig: releaseConfig ?? this.releaseConfig,
+      coreConfig: LoggerCoreConfig.simple(
+        globalLevel: globalLevel,
+        allowUnregisteredModules: allowUnregisteredModules,
+        strictMode: strictMode,
+      ),
+      moduleConfig: LoggerModuleRegistryConfig(
+        globalLevel: globalLevel ?? LogLevel.info,
+        enableColors: enableColors,
+        modules: modules ?? {},
+      ),
     );
   }
+
+  factory LogConfig.recommended() {
+    return LogConfig(
+      coreConfig: LoggerCoreConfig.recommended(),
+      moduleConfig: LoggerModuleRegistryConfig.minimal(),
+    );
+  }
+
+  @Deprecated('Use LogConfig.simple() or LogConfig.split() instead')
+  factory LogConfig.legacy({
+    required EnvironmentLogConfig developmentConfig,
+    EnvironmentLogConfig? profileConfig,
+    EnvironmentLogConfig? releaseConfig,
+    Map<String, LogModuleConfig>? modules,
+  }) {
+    final currentEnv = LoggerCoreConfig.detectEnvironment();
+    final envConfig = _selectLegacyConfig(
+      currentEnv,
+      developmentConfig,
+      profileConfig,
+      releaseConfig,
+    );
+
+    return LogConfig(
+      coreConfig: LoggerCoreConfig.simple(
+        environment: currentEnv,
+        globalLevel: envConfig.globalLevel,
+        allowUnregisteredModules: envConfig.allowUnregisteredModules,
+      ),
+      moduleConfig: LoggerModuleRegistryConfig(
+        globalLevel: envConfig.globalLevel,
+        enableColors: envConfig.enableColors,
+        modules: modules ?? {},
+        disabledModuleTypes: envConfig.disabledModuleTypes,
+        disabledLevels: envConfig.disabledLevels,
+      ),
+    );
+  }
+
+  static EnvironmentLogConfig _selectLegacyConfig(
+    LogEnvironment env,
+    EnvironmentLogConfig dev,
+    EnvironmentLogConfig? profile,
+    EnvironmentLogConfig? release,
+  ) {
+    switch (env) {
+      case LogEnvironment.development:
+        return dev;
+      case LogEnvironment.profile:
+        return profile ?? dev;
+      case LogEnvironment.release:
+        return release ?? dev;
+    }
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is LogConfig &&
+        other.coreConfig == coreConfig &&
+        other.moduleConfig == moduleConfig;
+  }
+
+  @override
+  int get hashCode => coreConfig.hashCode ^ moduleConfig.hashCode;
 }

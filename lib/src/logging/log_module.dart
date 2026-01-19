@@ -1,8 +1,10 @@
 // lib/src/logging/log_module.dart
 // Module registration system for scoped logging
 
+import 'package:flutter/foundation.dart';
 import 'log_level.dart';
 
+@immutable
 class LogModule {
   final String moduleName;
   final ModuleType moduleType;
@@ -15,20 +17,6 @@ class LogModule {
     this.defaultLevel,
     this.enabled = true,
   });
-
-  LogModule copyWith({
-    String? moduleName,
-    ModuleType? moduleType,
-    LogLevel? defaultLevel,
-    bool? enabled,
-  }) {
-    return LogModule(
-      moduleName: moduleName ?? this.moduleName,
-      moduleType: moduleType ?? this.moduleType,
-      defaultLevel: defaultLevel ?? this.defaultLevel,
-      enabled: enabled ?? this.enabled,
-    );
-  }
 
   @override
   bool operator ==(Object other) {

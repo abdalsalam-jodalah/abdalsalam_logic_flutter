@@ -1,53 +1,55 @@
 // lib/src/logging/log_filter.dart
 // Filtering logic for log messages based on level, module, and configuration
 
-import 'log_config.dart';
-import 'log_environment.dart';
+import 'logger_core_config.dart';
+import 'logger_module_registry_config.dart';
 import 'log_level.dart';
 import 'log_module.dart';
 
 class LogFilter {
-  final LogConfig config;
-  final EnvironmentLogConfig envConfig;
+  final LoggerCoreConfig coreConfig;
+  final LoggerModuleRegistryConfig moduleConfig;
 
-  const LogFilter(this.config, this.envConfig);
+  const LogFilter(this.coreConfig, this.moduleConfig);
 
-  bool shouldLog({
-    required LogLevel level,
-    required LogModule module,
-  }) {
+  bool shouldLog({required LogLevel level, required LogModule module}) {
     if (!module.enabled) {
       return false;
     }
 
-    if (envConfig.disabledLevels?.contains(level) ?? false) {
+    if (!moduleConfig.isLevelEnabled(level)) {
       return false;
     }
 
-    if (envConfig.disabledModuleTypes?.contains(module.moduleType) ?? false) {
+    if (!moduleConfig.isModuleTypeEnabled(module.moduleType)) {
       return false;
     }
 
-    final moduleConfig = config.modules[module.moduleName];
+    final registeredModuleConfig = moduleConfig.getModuleConfig(
+      module.moduleName,
+    );
 
-    if (moduleConfig != null) {
-      if (!moduleConfig.enabled) {
+    if (registeredModuleConfig != null) {
+      if (!registeredModuleConfig.enabled) {
         return false;
       }
 
-      final effectiveLevel = moduleConfig.level ?? envConfig.globalLevel;
+      final effectiveLevel =
+          registeredModuleConfig.level ??
+          coreConfig.getLevelForCurrentEnvironment();
       return level >= effectiveLevel;
     }
 
-    if (!envConfig.allowUnregisteredModules) {
+    if (!coreConfig.allowUnregisteredModules) {
       return false;
     }
 
-    final effectiveLevel = module.defaultLevel ?? envConfig.globalLevel;
+    final effectiveLevel =
+        module.defaultLevel ?? coreConfig.getLevelForCurrentEnvironment();
     return level >= effectiveLevel;
   }
 
   bool shouldEnableColors() {
-    return envConfig.enableColors;
+    return moduleConfig.enableColors;
   }
 }
