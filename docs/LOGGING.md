@@ -18,17 +18,39 @@ The logging system is a high-performance, configurable logging solution for Flut
 
 ### Class Responsibilities
 
+#### Core Classes
 - **Logger**: Abstract interface for module-scoped logging operations
-- **LoggerImpl**: Singleton implementation with strict initialization contract
-- **LogConfig**: Immutable configuration for the entire logging system with environment-specific settings
-- **EnvironmentLogConfig**: Configuration for a specific environment (development, profile, release)
+- **LoggerImpl**: Singleton implementation with strict initialization contract and strict mode support
+- **LogConfig**: Unified configuration wrapper supporting both split and simple configuration patterns
+
+#### Split Configuration (NEW - Recommended)
+- **LoggerCoreConfig**: Defines HOW the logger behaves
+  - Environment detection (dev/profile/release)
+  - Per-environment log levels
+  - Per-environment output targets
+  - Unregistered module policy
+  - Strict mode enforcement
+- **LoggerModuleRegistryConfig**: Defines WHAT can log
+  - Global log level
+  - Color settings
+  - Module-specific configurations
+  - Disabled module types
+  - Disabled log levels
+
+#### Supporting Classes
 - **LogModuleConfig**: Configuration for individual modules
-- **LogModule**: Registration information for logging sources
+- **LogModule**: Registration information for logging sources (immutable)
 - **LogLevel**: Severity levels (trace, debug, info, warning, error, fatal)
 - **ModuleType**: Classification with 27 specialized categories
-- **LogFilter**: Filtering logic based on level, module, and environment configuration
+- **LogTarget**: Output target enum (console, file, memory, remote)
+- **LogFilter**: Filtering logic based on level, module, and configuration
 - **LogFormatter**: Message formatting with structured output and colors
-- **LogOutput**: Output sink abstraction (console, file, remote)
+- **LogOutput**: Output sink abstraction with multiple implementations
+  - **ConsoleOutput**: Terminal/debug console output
+  - **FileOutput**: File-based logging with rotation
+  - **MemoryOutput**: In-memory circular buffer (NEW)
+  - **RemoteOutput**: Remote logging endpoint
+  - **MultiOutput**: Multiple simultaneous outputs
 
 ### Logger Lifecycle
 
@@ -101,28 +123,88 @@ The logging system is a high-performance, configurable logging solution for Flut
 
 ## Configuration
 
-### Environment-Based Configuration (NEW)
+### Split Configuration Architecture
 
-The logging system now requires environment-specific configurations:
-// Simple development-only config
-final logConfig = LogConfig(
-  developmentConfig: EnvironmentLogConfig(
-    globalLevel: LogLevel.info,
-    enableColors: true,
-    outputs: [ConsoleOutput()],
-    allowUnregisteredModules: true,
-  ),
-  modules: {
-    'AuthService': LogModuleConfig(
-      type: ModuleType.authentication,
-      enabled: true,
-      level: LogLevel.debug,
-    ),
+The logging system uses a strict split configuration pattern that separates concerns:
+
+**IMPORTANT**: All configuration parameters are required. There are no factory methods, no default values, and no auto-detection. You must explicitly specify every parameter.
+
+#### Configuration Example
+
+```dart
+// Core configuration: HOW the logger behaves (ALL parameters required)
+final coreConfig = LoggerCoreConfig(
+  environment: LogEnvironment.development,  // REQUIRED - no auto-detection
+  environmentLevels: {  // REQUIRED - must provide all environments you use
+    LogEnvironment.development: LogLevel.trace,
+    LogEnvironment.profile: LogLevel.debug,
+    LogEnvironment.release: LogLevel.error,
   },
+  targetsPerEnvironment: {  // REQUIRED - must specify targets for each environment
+    LogEnvironment.development: {LogTarget.console, LogTarget.memory},
+    LogEnvironment.profile: {LogTarget.console, LogTarget.file},
+    LogEnvironment.release: {LogTarget.file, LogTarget.remote},
+  },
+  allowUnregisteredModules: true,  // REQUIRED - no default
+  strictMode: false,  // REQUIRED - no default (set true to throw on violations)
 );
 
-LoggerImpl.initialize(logConfig);
+// Module configuration: WHAT can log (ALL parameters required)
+final moduleConfig = LoggerModuleRegistryConfig(
+  globalLevel: LogLevel.debug,  // REQUIRED - no default
+  enableColors: true,  // REQUIRED - no default
+  modules: const {},  // REQUIRED - can be empty map
+  // Optional filters
+  disabledModuleTypes: {ModuleType.analytics},
+  disabledLevels: {LogLevel.trace},
+);
+
+// Combine into unified config (BOTH configs required)
+final config = LogConfig(
+  coreConfig: coreConfig,
+  moduleConfig: moduleConfig,
+);
+
+LoggerImpl.initialize(config);
 ```
+
+### LoggerCoreConfig Options
+
+- **environment**: Current environment - REQUIRED, must be explicitly specified (no auto-detection)
+- **environmentLevels**: Map of log level per environment - REQUIRED
+- **targetsPerEnvironment**: Map of output targets per environment - REQUIRED
+- **allowUnregisteredModules**: Allow logs from unregistered modules - REQUIRED (no default)
+- **strictMode**: Throw errors on violations vs silent degradation - REQUIRED (no default)
+
+### LoggerModuleRegistryConfig Options
+
+- **globalLevel**: Default log level threshold - REQUIRED (no default)
+- **enableColors**: Enable ANSI colors in console output - REQUIRED (no default)
+- **modules**: Per-module configuration overrides - REQUIRED (can be empty map)
+- **disabledModuleTypes**: Disable all modules of specific types - OPTIONAL
+- **disabledLevels**: Disable specific log levels entirely - OPTIONAL
+
+### LogTarget Enum (NEW)
+
+Explicit output target specification:
+- **LogTarget.console**: Terminal/debug console
+- **LogTarget.file**: File-based logging
+- **LogTarget.memory**: In-memory circular buffer
+- **LogTarget.remote**: Remote logging endpoint
+
+### Strict Mode (NEW)
+
+Control error handling behavior:
+- **strictMode = true**: Throws StateError on violations (recommended for dev/test)
+- **strictMode = false**: Silent degradation (recommended for production)
+
+Violations include:
+- Re-initialization attempts
+- Using logger before initialization (dev/profile only)
+- Output write failures
+- Invalid configurations
+
+
 
 ### Configuration Options (Per Environment)ut(), FileOutput()],
     allowUnregisteredModules: true,
@@ -257,23 +339,73 @@ RemoteOutput(
 ### 4. Multiple Outputs
 
 ```dart
-EnvironmentLogConfig(
-  outputs: [
-    ConsoleOutput(),
-    FileOutput(fileName: 'debug_logs.txt'),
-    RemoteOutput(
-      endpoint: 'https://api.example.com/logs',
-      allowedLevels: {'ERROR', 'FATAL'},
-    ),
-  ],
+// Using split configuration with multiple targets
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig.simple(
+    targets: {LogTarget.console, LogTarget.file, LogTarget.memory},
+  ),
+  moduleConfig: LoggerModuleRegistryConfig.minimal(),
+);
+```
+
+Logs are sent to ALL configured outputs simultaneously.
+
+### 5. Memory Output (NEW)
+
+```dart
+// In-memory circular buffer for debugging
+MemoryOutput(
+  maxEntries: 1000,  // Default: 1000 entries
 )
 ```
 
-Logs are sent to ALL configured outputs simultaneously.ModuleConfig(
-  type: ModuleType.service,      // Module classification
-  enabled: true,                  // Enable/disable this module
-  level: LogLevel.debug,          // Override global level
-)
+**When to use**: In-app debugging, crash report context, testing  
+**Features**:
+- Circular buffer (oldest logs overwritten when full)
+- Retrieve all logs or recent N logs
+- Clear buffer on demand
+- Zero disk I/O
+- Accessible via `LoggerImpl.getMemoryOutput()`
+
+**Usage Example**:
+```dart
+// Configure with memory target
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: {
+      LogEnvironment.development: LogLevel.debug,
+    },
+    targetsPerEnvironment: {
+      LogEnvironment.development: {LogTarget.console, LogTarget.memory},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
+  ),
+  moduleConfig: LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.debug,
+    enableColors: true,
+    modules: const {},
+  ),
+);
+
+LoggerImpl.initialize(config);
+
+// Log messages
+logger.info(() => 'Message 1');
+logger.debug(() => 'Message 2');
+
+// Retrieve from buffer
+final memoryOutput = LoggerImpl.getMemoryOutput();
+if (memoryOutput != null) {
+  final allLogs = memoryOutput.getLogs();
+  final recentLogs = memoryOutput.getRecentLogs(50);
+  print('Total logs: ${memoryOutput.logCount}');
+  memoryOutput.clear();  // Clear buffer
+}
+```
+
+### LogModuleConfig Options
 ```
 
 ## Usage Examples
@@ -388,111 +520,191 @@ Error: Network timeout
 ### Global Level Filtering
 
 ```dart
-LogConfig(
-  developmentConfig: EnvironmentLogConfig(
-    globalLevel: LogLevel.warning, // Only warning, error, fatal
-    outputs: [ConsoleOutput()],
+// Only warning, error, fatal
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: {
+      LogEnvironment.development: LogLevel.warning,
+    },
+    targetsPerEnvironment: {
+      LogEnvironment.development: {LogTarget.console},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
   ),
-)
+  moduleConfig: LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.warning,
+    enableColors: true,
+    modules: const {},
+  ),
+);
 ```
 
 ### Per-Module Filtering
 
 ```dart
-LogConfig(
-  developmentConfig: EnvironmentLogConfig(
-    globalLevel: LogLevel.info,
-    outputs: [ConsoleOutput()],
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: {
+      LogEnvironment.development: LogLevel.info,
+    },
+    targetsPerEnvironment: {
+      LogEnvironment.development: {LogTarget.console},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
   ),
-  modules: {
-    'AuthService': LogModuleConfig(
-      type: ModuleType.authentication,
-      level: LogLevel.debug, // More verbose for this module
-    ),
-    'NetworkClient': LogModuleConfig(
-      type: ModuleType.network,
-      enabled: false, // Completely disabled
-    ),
-  },
-)
+  moduleConfig: LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.info,
+    enableColors: true,
+    modules: {
+      'AuthService': LogModuleConfig(
+        type: ModuleType.authentication,
+        level: LogLevel.debug,  // More verbose for this module
+        enabled: true,
+      ),
+      'NetworkClient': LogModuleConfig(
+        type: ModuleType.network,
+        level: LogLevel.info,
+        enabled: false,  // Completely disabled
+      ),
+    },
+  ),
+);
 ```
 
 ### Module Type Filtering
 
 ```dart
-LogConfig(
-  developmentConfig: EnvironmentLogConfig(
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: {
+      LogEnvironment.development: LogLevel.info,
+    },
+    targetsPerEnvironment: {
+      LogEnvironment.development: {LogTarget.console},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
+  ),
+  moduleConfig: LoggerModuleRegistryConfig(
     globalLevel: LogLevel.info,
-    outputs: [ConsoleOutput()],
+    enableColors: true,
+    modules: const {},
     disabledModuleTypes: {
       ModuleType.view,
       ModuleType.viewModel,
       ModuleType.analytics,
-    }, // Disable all UI and analytics logging
+    },  // Disable all UI and analytics logging
   ),
-)
+);
 ```
 
 ### Log Level Filtering
 
 ```dart
-LogConfig(
-  releaseConfig: EnvironmentLogConfig(
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig(
+    environment: LogEnvironment.release,
+    environmentLevels: {
+      LogEnvironment.release: LogLevel.error,
+    },
+    targetsPerEnvironment: {
+      LogEnvironment.release: {LogTarget.file},
+    },
+  ),
+  moduleConfig: LoggerModuleRegistryConfig(
     globalLevel: LogLevel.error,
-    outputs: [FileOutput()],
     disabledLevels: {
       LogLevel.trace,
       LogLevel.debug,
       LogLevel.info,
-    }, // Only warnings and above in release
+    },  // Only warnings and above in release
   ),
-)
+);
 ```
 
-### Strict Mode
+### Strict Module Registration
 
 ```dart
-LogConfig(
-  releaseConfig: EnvironmentLogConfig(
-    globalLevel: LogLevel.info,
-    outputs: [FileOutput()],
-    allowUnregisteredModules: false, // Only configured modules can log
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig(
+    environment: LogEnvironment.release,
+    environmentLevels: {
+      LogEnvironment.release: LogLevel.info,
+    },
+    targetsPerEnvironment: {
+      LogEnvironment.release: {LogTarget.file},
+    },
+    allowUnregisteredModules: false,  // Only configured modules can log
+    strictMode: true,  // Throw on violations
   ),
-  modules: {
-    'AuthService': LogModuleConfig(
-      type: ModuleType.authentication,
-      enabled: true,
-    ),
-  },
+  moduleConfig: LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.info,
+    modules: {
+      'AuthService': LogModuleConfig(
+        type: ModuleType.authentication,
+        enabled: true,
+      ),
+    },
+  ),
+);
+```
+
+## Environment-Specific Recommendations
+
+### Development Mode (kDebugMode)
+
 **Recommended Configuration**:
 ```dart
-developmentConfig: EnvironmentLogConfig(
-  globalLevel: LogLevel.trace,           // Most verbose
-  enableColors: true,                     // Colorful console
-  outputs: [ConsoleOutput()],            // Console only
-  allowUnregisteredModules: true,        // Permissive
-)
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: {
+      LogEnvironment.development: LogLevel.trace,
+    },
+    targetsPerEnvironment: {
+      LogEnvironment.development: {LogTarget.console, LogTarget.memory},
+    },
+    allowUnregisteredModules: true,
+  ),
+  moduleConfig: LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.trace,
+    enableColors: true,
+  ),
+);
 ```
 
 **Characteristics**:
 - All log levels available
 - Colorful console output
+- Memory buffer for debugging
 - Throws StateError if used before initialization
-- Typically console-only output
+- Permissive (allows unregistered modules)
 
 ### Profile Mode (kProfileMode)
 
 **Recommended Configuration**:
 ```dart
-profileConfig: EnvironmentLogConfig(
-  globalLevel: LogLevel.debug,           // Less verbose
-  enableColors: true,
-  outputs: [
-    ConsoleOutput(),
-    FileOutput(fileName: 'profile_logs.txt'),
-  ],
-  allowUnregisteredModules: true,
-)
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig(
+    environment: LogEnvironment.profile,
+    environmentLevels: {
+      LogEnvironment.profile: LogLevel.debug,
+    },
+    targetsPerEnvironment: {
+      LogEnvironment.profile: {LogTarget.console, LogTarget.file},
+    },
+    allowUnregisteredModules: true,
+  ),
+  moduleConfig: LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.debug,
+    enableColors: true,
+  ),
+);
 ```
 
 **Characteristics**:
@@ -506,15 +718,28 @@ profileConfig: EnvironmentLogConfig(
 
 **Recommended Configuration**:
 ```dart
-releaseConfig: EnvironmentLogConfig(
-  globalLevel: LogLevel.error,           // Errors only
-  enableColors: false,                    // No colors
-  outputs: [
-    FileOutput(
-      fileName: 'production_logs.txt',
-      maxFileSizeBytes: 20 * 1024 * 1024,
-      maxBackupFiles: 10,
-    Custom Formatters
+final config = LogConfig(
+  coreConfig: LoggerCoreConfig(
+    environment: LogEnvironment.release,
+    environmentLevels: {
+      LogEnvironment.release: LogLevel.error,
+    },
+    targetsPerEnvironment: {
+      LogEnvironment.release: {LogTarget.file, LogTarget.remote},
+    },
+    allowUnregisteredModules: false,
+    strictMode: true,
+  ),
+  moduleConfig: LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.error,
+    enableColors: false,
+    disabledModuleTypes: {
+      ModuleType.view,
+      ModuleType.viewModel,
+      ModuleType.analytics,
+    },
+  ),
+);
 
 ```dart
 // Create custom JSON formatter for log aggregation
@@ -887,3 +1112,30 @@ If migrating from `logger_service.dart`:
    // New
    log.info(() => 'Message: $value');
    ```
+
+---
+
+## Summary
+
+The logging system provides 100% strict, production-grade compliance:
+
+✅ **Mandatory explicit configuration** - No defaults, no auto-detection, no helper methods  
+✅ **Split configuration architecture** - Separated core (HOW) and module (WHAT) concerns  
+✅ **Strict mode enforcement** - Choose between throw vs silent degradation  
+✅ **Memory output target** - Circular buffer for in-app debugging  
+✅ **Explicit target mapping** - Per-environment output control  
+✅ **Immutable configurations** - Thread-safe, predictable behavior  
+✅ **Runtime validation** - Throws StateError for missing configurations  
+✅ **27 specialized module types** - Fine-grained categorization  
+✅ **Multiple output targets** - Console, file, memory, remote  
+
+**Key Principles**:
+- Every parameter must be explicitly specified
+- No factory methods or convenience constructors
+- Environment must be manually specified (no auto-detection)
+- All configurations are immutable and validated at runtime
+- Strict initialization contract enforced
+
+For complete examples, see:
+- `lib/examples/logging_advanced_example.dart`
+- `lib/examples/logging_example.dart`
