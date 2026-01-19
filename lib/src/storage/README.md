@@ -9,7 +9,8 @@
 1. **[DELIVERY_SUMMARY.md](DELIVERY_SUMMARY.md)** - What was delivered, checklist, files created
 2. **[STORAGE_ABSTRACTION.md](STORAGE_ABSTRACTION.md)** - Complete architecture guide
 3. **[RESPONSIBILITY_MATRIX.md](RESPONSIBILITY_MATRIX.md)** - Who does what, required vs optional
-4. **[README.md](README.md)** (this file)
+4. **[EXCEPTION_GUIDE.md](EXCEPTION_GUIDE.md)** ⭐ - Complete exception handling guide
+5. **[README.md](README.md)** (this file)
 
 ## 🗄️ Storage Catalog System
 
@@ -109,20 +110,38 @@ See [storage_catalog_example.dart](../examples/storage_catalog_example.dart) for
 
 ## 🚨 Exception Hierarchy
 
-**[exceptions/storage_exceptions.dart](exceptions/storage_exceptions.dart)**
+**[exceptions/storage_exceptions.dart](exceptions/storage_exceptions.dart)**  
+**📖 [Complete Exception Guide](EXCEPTION_GUIDE.md)** - Comprehensive usage guide
 
-10 specific exception types + base `StorageException`:
-- `StorageInitializationException`
-- `StorageNotFoundException`
-- `StorageConstraintException`
-- `StorageSpaceException`
-- `StorageTimeoutException`
-- `StorageCorruptionException`
-- `StorageUnsupportedException`
-- `StorageStateException`
-- `StorageTransactionException`
-- `StoragePermissionException`
-- `StorageOperationException`
+**11 Specific Exception Types** + Base `StorageException`:
+
+| Exception | When to Use | Code |
+|-----------|-------------|------|
+| `StorageInitializationException` | Storage fails to initialize | `STORAGE_INIT_FAILED` |
+| `StorageNotFoundException` | Item not found | `NOT_FOUND` |
+| `StorageConstraintException` | Constraint violation | `CONSTRAINT_VIOLATION` |
+| `StorageSpaceException` | Insufficient space | `INSUFFICIENT_SPACE` |
+| `StorageTimeoutException` | Operation timeout | `OPERATION_TIMEOUT` |
+| `StorageCorruptionException` | Data corruption | `DATA_CORRUPTION` |
+| `StorageUnsupportedException` | Feature not supported | `UNSUPPORTED_OPERATION` |
+| `StorageStateException` | Invalid state | `INVALID_STATE` |
+| `StorageTransactionException` | Transaction failure | `TRANSACTION_FAILED` |
+| `StoragePermissionException` | Permission denied | `PERMISSION_DENIED` |
+| `StorageOperationException` | Generic operation failure | `OPERATION_FAILED` |
+
+**Key Features**:
+- ✅ All backend exceptions converted to storage exceptions
+- ✅ Original errors preserved for debugging
+- ✅ Consistent error codes across implementations
+- ✅ Stack traces captured
+- ✅ Meaningful, actionable error messages
+
+See **[EXCEPTION_GUIDE.md](EXCEPTION_GUIDE.md)** for:
+- Detailed usage for each exception type
+- Code examples and patterns
+- Best practices
+- Testing strategies
+- Exception coverage matrix
 
 ## 🧰 Helper Types
 
