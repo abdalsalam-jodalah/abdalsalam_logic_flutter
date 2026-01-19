@@ -62,6 +62,25 @@ enum ModuleType {
   network,
   storage,
   websocket,
+  api,
+  database,
+  cache,
+  authentication,
+  authorization,
+  background,
+  scheduler,
+  analytics,
+  crashReporting,
+  payment,
+  media,
+  location,
+  push,
+  deepLink,
+  biometric,
+  encryption,
+  sync,
+  prefetch,
+  fileSystem,
   other;
 
   String get displayName {
@@ -82,6 +101,44 @@ enum ModuleType {
         return 'STRG';
       case ModuleType.websocket:
         return 'WS';
+      case ModuleType.api:
+        return 'API';
+      case ModuleType.database:
+        return 'DB';
+      case ModuleType.cache:
+        return 'CACHE';
+      case ModuleType.authentication:
+        return 'AUTH';
+      case ModuleType.authorization:
+        return 'AUTHZ';
+      case ModuleType.background:
+        return 'BG';
+      case ModuleType.scheduler:
+        return 'SCHED';
+      case ModuleType.analytics:
+        return 'ANLYT';
+      case ModuleType.crashReporting:
+        return 'CRASH';
+      case ModuleType.payment:
+        return 'PAY';
+      case ModuleType.media:
+        return 'MEDIA';
+      case ModuleType.location:
+        return 'LOC';
+      case ModuleType.push:
+        return 'PUSH';
+      case ModuleType.deepLink:
+        return 'LINK';
+      case ModuleType.biometric:
+        return 'BIO';
+      case ModuleType.encryption:
+        return 'ENCR';
+      case ModuleType.sync:
+        return 'SYNC';
+      case ModuleType.prefetch:
+        return 'FETCH';
+      case ModuleType.fileSystem:
+        return 'FS';
       case ModuleType.other:
         return 'OTHER';
     }

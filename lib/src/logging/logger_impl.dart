@@ -3,6 +3,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'log_config.dart';
+import 'log_environment.dart';
 import 'log_filter.dart';
 import 'log_formatter.dart';
 import 'log_level.dart';
@@ -11,8 +12,7 @@ import 'log_output.dart';
 import 'logger.dart';
 
 class LoggerImpl implements Logger {
-  static LoggerImpl? _instance;
-  static LogConfig? _config;
+  static EnvironmentLogConfig? _envConfig;
   static LogFilter? _filter;
   static LogFormatter? _formatter;
   static LogOutput? _output;
@@ -29,10 +29,18 @@ class LoggerImpl implements Logger {
       );
     }
 
-    _config = config;
-    _filter = LogFilter(config);
+    _envConfig = config.getConfigForCurrentEnvironment();
+    _filter = LogFilter(config, _envConfig!);
     _formatter = DefaultLogFormatter();
-    _output = ConsoleOutput(enableInRelease: config.enableConsoleInRelease);
+
+    if (_envConfig!.outputs.isEmpty) {
+      _output = const ConsoleOutput();
+    } else if (_envConfig!.outputs.length == 1) {
+      _output = _envConfig!.outputs.first;
+    } else {
+      _output = MultiOutput(_envConfig!.outputs);
+    }
+
     _initialized = true;
   }
 
@@ -40,7 +48,7 @@ class LoggerImpl implements Logger {
     if (!_initialized) {
       if (kDebugMode || kProfileMode) {
         throw StateError(
-          'Logger must be initialized before use. Call Logger.initialize(config) first.',
+          'Logger must be initialized before use. Call LoggerImpl.initialize(config) first.',
         );
       }
       return _NoOpLogger(module);
@@ -49,14 +57,13 @@ class LoggerImpl implements Logger {
     return LoggerImpl._(module);
   }
 
-  static void dispose() {
-    _output?.close();
-    _config = null;
+  static Future<void> dispose() async {
+    await _output?.close();
+    _envConfig = null;
     _filter = null;
     _formatter = null;
     _output = null;
     _initialized = false;
-    _instance = null;
   }
 
   @override

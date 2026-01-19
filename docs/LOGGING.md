@@ -2,16 +2,17 @@
 
 ## Overview
 
-The logging system is a high-performance, configurable logging solution for Flutter/Dart applications with strict initialization requirements, module-based organization, and environment-aware behavior.
+The logging system is a high-performance, configurable logging solution for Flutter/Dart applications with strict initialization requirements, module-based organization, environment-aware behavior, and multiple output targets.
 
 ## Core Principles
 
 1. **Mandatory Initialization**: Logger will not work until explicitly initialized with a `LogConfig`
 2. **Strongly Typed Configuration**: Immutable configuration passed exactly once
 3. **Performance Optimized**: Lazy message evaluation, zero overhead when filtered
-4. **Environment Aware**: Automatic behavior adjustment for dev/profile/release modes
+4. **Environment Aware**: Separate configurations for development, profile, and release modes
 5. **Module-Based**: Every logging source must register with module name and type
 6. **Centralized Control**: Single configuration file controls all logging behavior
+7. **Multiple Outputs**: Console, file, and remote logging with flexible configuration
 
 ## Architecture
 
@@ -19,12 +20,13 @@ The logging system is a high-performance, configurable logging solution for Flut
 
 - **Logger**: Abstract interface for module-scoped logging operations
 - **LoggerImpl**: Singleton implementation with strict initialization contract
-- **LogConfig**: Immutable configuration for the entire logging system
+- **LogConfig**: Immutable configuration for the entire logging system with environment-specific settings
+- **EnvironmentLogConfig**: Configuration for a specific environment (development, profile, release)
 - **LogModuleConfig**: Configuration for individual modules
 - **LogModule**: Registration information for logging sources
 - **LogLevel**: Severity levels (trace, debug, info, warning, error, fatal)
-- **ModuleType**: Classification (service, repository, view, viewModel, state, network, storage, websocket, other)
-- **LogFilter**: Filtering logic based on level, module, and configuration
+- **ModuleType**: Classification with 27 specialized categories
+- **LogFilter**: Filtering logic based on level, module, and environment configuration
 - **LogFormatter**: Message formatting with structured output and colors
 - **LogOutput**: Output sink abstraction (console, file, remote)
 
@@ -53,21 +55,120 @@ The logging system is a high-performance, configurable logging solution for Flut
 - **error** (4): Error events that might still allow app to continue
 - **fatal** (5): Severe errors that may lead to app termination
 
-## Module Types
+## Module Types (27 Categories)
 
-- **service**: Business logic services
-- **repository**: Data access layer
-- **view**: UI components
-- **viewModel**: Presentation layer
-- **state**: State management
-- **network**: Network operations
-- **storage**: Data persistence
-- **websocket**: Real-time communication
-- **other**: Uncategorized modules
+### Core System
+- **service** - General business logic services
+- **repository** - Data access layer
+- **state** - State management
+- **other** - Uncategorized modules
+
+### UI Layer
+- **view** - UI components
+- **viewModel** - Presentation layer
+
+### Networking
+- **network** - Network operations
+- **api** - API clients
+- **websocket** - Real-time communication
+
+### Data Layer
+- **storage** - Data persistence
+- **database** - Database operations
+- **cache** - Caching layer
+- **fileSystem** - File system operations
+
+### Authentication & Security
+- **authentication** - User authentication
+- **authorization** - Permissions & roles
+- **biometric** - Biometric authentication
+- **encryption** - Data encryption
+
+### Background Processing
+- **background** - Background tasks
+- **scheduler** - Task scheduling
+- **sync** - Data synchronization
+- **prefetch** - Data prefetching
+
+### Integrations
+- **analytics** - Analytics tracking
+- **crashReporting** - Error reporting
+- **payment** - Payment processing
+- **media** - Media processing
+- **location** - Location services
+- **push** - Push notifications
+- **deepLink** - Deep link handling
 
 ## Configuration
 
-### Basic Configuration
+### Environment-Based Configuration (NEW)
+
+The logging system now requires environment-specific configurations:
+// Simple development-only config
+final logConfig = LogConfig(
+  developmentConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.info,
+    enableColors: true,
+    outputs: [ConsoleOutput()],
+    allowUnregisteredModules: true,
+  ),
+  modules: {
+    'AuthService': LogModuleConfig(
+      type: ModuleType.authentication,
+      enabled: true,
+      level: LogLevel.debug,
+    ),
+  },
+);
+
+LoggerImpl.initialize(logConfig);
+```
+
+### Configuration Options (Per Environment)ut(), FileOutput()],
+    allowUnregisteredModules: true,
+  ),
+  
+  // OPTIONAL: Release environment config (defaults to development if not provided)
+  releaseConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.error,
+    enableColors: false,
+    outputs: [
+      FileOutput(
+        fileName: 'production_logs.txt',
+        maxFileSizeBytes: 20 * 1024 * 1024,
+        maxBackupFiles: 10,
+      ),
+      RemoteOutput(
+        endpoint: 'https://crashreports.example.com/api/logs',
+        allowedLevels: {'ERROR', 'FATAL'},
+      ),
+    ],
+    allowUnregisteredModules: false,
+  ),
+  
+  // OPTIONAL: Per-module configuration overrides
+  modules: {
+    'AuthService': LogModuleConfig(
+      type: ModuleType.authentication,
+      enabled: true,
+      level: LogLevel.debug,
+    ),
+  },
+);
+
+LoggerImpl.initialize(config);
+```
+
+### EnvironmentLogConfig Options
+
+- **globalLevel**: Log level threshold for this environment
+- **enableColors**: Enable ANSI colors in console output
+- **outputs**: List of output targets (console, file, remote, or multiple)
+- **allowUnregisteredModules**: Allow logs from unregistered modules (default: true)
+- **disabledModuleTypes**: Disable all modules of specific types
+- **disabledLevels**: Disable specific log levels entirely
+
+### Basic Configuration (Legacy Style)
 
 ```dart
 final logConfig = LogConfig(
@@ -82,22 +183,93 @@ final logConfig = LogConfig(
   },
 );
 
-LoggerImpl.initialize(logConfig);
-```
-
-### Configuration Options
-
-- **globalLevel**: Default log level for all modules
+LoggerImpl.initialize(logConfig); in this environment
+- **enableColors**: Enable ANSI colors in console output
+- **outputs**: List of LogOutput instances (console, file, remote)
+- **allowUnregisteredModules**: If false, logs from unregistered modules are rejected
+- **disabledModuleTypes**: Disable all modules of specific types
+- **disabledLevels**: Disable specific log level
 - **enableColors**: Enable ANSI colors in console output (auto-disabled in release)
 - **modules**: Per-module configuration overrides
 - **rejectUnregisteredModules**: If true, logs from unregistered modules are rejected
 - **enableConsoleInRelease**: Enable console output in release mode (default: false)
 - **disabledModuleTypes**: Disable all modules of specific types
+authentication,  // Module classification (use specific types)
+  enabled: true,                     // Enable/disable this module
+  level: LogLevel.debug,             // Override environment's global level
+)
+```
 
-### Module Configuration
+## Output Targets
+
+### 1. Console Output
 
 ```dart
-LogModuleConfig(
+const ConsoleOutput(
+  enableInRelease: false, // Disable in production (default)
+)
+```
+
+**When to use**: Development and profile modes  
+**Supports colors**: Yes  
+**Performance**: Instant output
+
+### 2. File Output
+
+```dart
+FileOutput(
+  fileName: 'app_logs.txt',              // Log file name
+  maxFileSizeBytes: 10 * 1024 * 1024,    // 10MB max size
+  maxBackupFiles: 5,                      // Keep 5 rotated backups
+  enableInRelease: true,                  // Keep enabled in production
+)
+```
+
+**When to use**: Persistent logging, debugging production issues  
+**Features**:
+- Automatic file rotation when size limit reached
+- Keeps configured number of backup files
+- Async writing with buffering
+- Stored in app's documents directory under `logs/`
+
+**File rotation**: `app_logs.txt` → `app_logs.txt.1` → `app_logs.txt.2` → ...
+
+### 3. Remote Output
+
+```dart
+RemoteOutput(
+  endpoint: 'https://crashreports.example.com/api/logs',
+  headers: {'Authorization': 'Bearer token'},
+  batchInterval: Duration(seconds: 30),   // Send batch every 30s
+  maxBatchSize: 100,                      // Or when 100 logs accumulated
+  allowedLevels: {'ERROR', 'FATAL'},      // Only send errors
+  enableInRelease: true,
+)
+```
+
+**When to use**: Error monitoring, crash reporting  
+**Features**:
+- Batch processing to reduce network calls
+- Filter by log level (typically ERROR/FATAL only)
+- Automatic retry on failure
+- Configurable headers for authentication
+
+### 4. Multiple Outputs
+
+```dart
+EnvironmentLogConfig(
+  outputs: [
+    ConsoleOutput(),
+    FileOutput(fileName: 'debug_logs.txt'),
+    RemoteOutput(
+      endpoint: 'https://api.example.com/logs',
+      allowedLevels: {'ERROR', 'FATAL'},
+    ),
+  ],
+)
+```
+
+Logs are sent to ALL configured outputs simultaneously.ModuleConfig(
   type: ModuleType.service,      // Module classification
   enabled: true,                  // Enable/disable this module
   level: LogLevel.debug,          // Override global level
@@ -116,7 +288,7 @@ class AuthService {
     _log = LoggerImpl.forModule(
       const LogModule(
         moduleName: 'AuthService',
-        moduleType: ModuleType.service,
+        moduleType: ModuleType.authentication,  // Use specific module type
       ),
     );
   }
@@ -217,7 +389,10 @@ Error: Network timeout
 
 ```dart
 LogConfig(
-  globalLevel: LogLevel.warning, // Only warning, error, fatal
+  developmentConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.warning, // Only warning, error, fatal
+    outputs: [ConsoleOutput()],
+  ),
 )
 ```
 
@@ -225,10 +400,13 @@ LogConfig(
 
 ```dart
 LogConfig(
-  globalLevel: LogLevel.info,
+  developmentConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.info,
+    outputs: [ConsoleOutput()],
+  ),
   modules: {
     'AuthService': LogModuleConfig(
-      type: ModuleType.service,
+      type: ModuleType.authentication,
       level: LogLevel.debug, // More verbose for this module
     ),
     'NetworkClient': LogModuleConfig(
@@ -243,11 +421,31 @@ LogConfig(
 
 ```dart
 LogConfig(
-  globalLevel: LogLevel.info,
-  disabledModuleTypes: {
-    ModuleType.view,
-    ModuleType.viewModel,
-  }, // Disable all UI logging
+  developmentConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.info,
+    outputs: [ConsoleOutput()],
+    disabledModuleTypes: {
+      ModuleType.view,
+      ModuleType.viewModel,
+      ModuleType.analytics,
+    }, // Disable all UI and analytics logging
+  ),
+)
+```
+
+### Log Level Filtering
+
+```dart
+LogConfig(
+  releaseConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.error,
+    outputs: [FileOutput()],
+    disabledLevels: {
+      LogLevel.trace,
+      LogLevel.debug,
+      LogLevel.info,
+    }, // Only warnings and above in release
+  ),
 )
 ```
 
@@ -255,32 +453,235 @@ LogConfig(
 
 ```dart
 LogConfig(
-  globalLevel: LogLevel.info,
-  rejectUnregisteredModules: true, // Only configured modules can log
+  releaseConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.info,
+    outputs: [FileOutput()],
+    allowUnregisteredModules: false, // Only configured modules can log
+  ),
   modules: {
     'AuthService': LogModuleConfig(
-      type: ModuleType.service,
+      type: ModuleType.authentication,
       enabled: true,
     ),
   },
+**Recommended Configuration**:
+```dart
+developmentConfig: EnvironmentLogConfig(
+  globalLevel: LogLevel.trace,           // Most verbose
+  enableColors: true,                     // Colorful console
+  outputs: [ConsoleOutput()],            // Console only
+  allowUnregisteredModules: true,        // Permissive
 )
 ```
 
-## Performance Optimization
+**Characteristics**:
+- All log levels available
+- Colorful console output
+- Throws StateError if used before initialization
+- Typically console-only output
 
-### Lazy Message Evaluation
+### Profile Mode (kProfileMode)
 
-Messages are built using function builders to avoid string construction when logs are filtered:
-
+**Recommended Configuration**:
 ```dart
-// ✅ Good - Message only built if log level passes filter
-_log.debug(() => 'Processing ${items.length} items: ${items.map((i) => i.id).join(", ")}');
-
-// ❌ Bad - String always constructed, even if filtered
-_log.debug('Processing ${items.length} items: ${items.map((i) => i.id).join(", ")}');
+profileConfig: EnvironmentLogConfig(
+  globalLevel: LogLevel.debug,           // Less verbose
+  enableColors: true,
+  outputs: [
+    ConsoleOutput(),
+    FileOutput(fileName: 'profile_logs.txt'),
+  ],
+  allowUnregisteredModules: true,
+)
 ```
 
-### Zero Overhead When Filtered
+**Characteristics**:
+- Debug and above
+- Colors enabled
+- Both console and file output
+- Good for performance profiling with logs
+- Throws StateError if used before initialization
+
+### Release Mode (kReleaseMode)
+
+**Recommended Configuration**:
+```dart
+releaseConfig: EnvironmentLogConfig(
+  globalLevel: LogLevel.error,           // Errors only
+  enableColors: false,                    // No colors
+  outputs: [
+    FileOutput(
+      fileName: 'production_logs.txt',
+      maxFileSizeBytes: 20 * 1024 * 1024,
+      maxBackupFiles: 10,
+    Custom Formatters
+
+```dart
+// Create custom JSON formatter for log aggregation
+class JsonLogFormatter implements LogFormatter {
+  @override
+  String format({
+    required DateTime timestamp,
+    required LogLevel level,
+    required LogModule module,
+    required String message,
+    bool enableColors = true,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    return jsonEncode({
+      'timestamp': timestamp.toIso8601String(),
+      'level': level.name,
+      'module': module.moduleName,
+      'type': module.moduleType.name,
+      'message': message,
+      if (error != null) 'error': error.toString(),
+      if (stackTrace != null) 'stackTrace': stackTrace.toString(),
+    });
+  }
+}
+```
+
+### Custom Output Targets
+
+```dart
+// Create custom database output for persistent structured logs
+class DatabaseOutput implements LogOutput {
+  final Database db;
+  
+  DatabaseOutput(this.db);
+  
+  @override
+  void write(String message) {
+    db.insert('logs', {
+      'message': message,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+  
+  @override
+  Future<void> close() async {
+    await db.close(mplete Configuration Examples
+
+### Example 1: Development-Focused
+
+```dart
+final config = LogConfig(
+  developmentConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.trace,
+    enableColors: true,
+    outputs: [ConsoleOutput()],
+    allowUnregisteredModules: true,
+  ),
+  modules: {
+    'AuthService': LogModuleConfig(
+      type: ModuleType.authentication,
+      enabled: true,
+    ),
+  },
+);
+
+LoggerImpl.initialize(config);
+```
+
+### Example 2: Production-Ready
+
+```dart
+final config = LogConfig(
+  developmentConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.debug,
+    enableColors: true,
+    outputs: [
+      ConsoleOutput(),
+      FileOutput(fileName: 'dev_logs.txt'),
+    ],
+    allowUnregisteredModules: true,
+  ),
+  
+  releaseConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.error,
+    enableColors: false,
+    outputs: [
+      FileOutput(
+        fileName: 'production_logs.txt',
+        maxFileSizeBytes: 20 * 1024 * 1024,
+        maxBackupFiles: 10,
+      ),
+      RemoteOutput(
+        endpoint: 'https://crashreports.example.com/api/logs',
+        headers: {
+          'Authorization': 'Bearer your-api-key',
+          'X-App-Version': '1.0.0',
+        },
+        batchInterval: Duration(minutes: 1),
+        maxBatchSize: 50,
+        allowedLevels: {'ERROR', 'FATAL'},
+      ),
+    ],
+    allowUnregisteredModules: false,
+    disabledModuleTypes: {
+      ModuleType.view,
+      ModuleType.viewModel,
+      ModuleType.analytics,
+    },
+  ),
+  
+  modules: {
+    'AuthService': LogModuleConfig(
+      type: ModuleType.authentication,
+      enabled: true,
+      level: LogLevel.info,
+    ),
+    'PaymentService': LogModuleConfig(
+      type: ModuleType.payment,
+      enabled: true,
+      level: LogLevel.debug,
+    ),
+    'DatabaseService': LogModuleConfig(
+      type: ModuleType.database,
+      enabled: true,
+      level: LogLevel.warning,
+    ),
+  },
+);
+
+LoggerImpl.initialize(config);
+```
+
+### Example 3: Multi-Output with Filtering
+
+```dart
+final config = LogConfig(
+  developmentConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.debug,
+    enableColors: true,
+    outputs: [
+      ConsoleOutput(),
+      FileOutput(
+        fileName: 'all_logs.txt',
+        maxFileSizeBytes: 10 * 1024 * 1024,
+      ),
+    ],
+    allowUnregisteredModules: true,
+  ),
+  
+  releaseConfig: EnvironmentLogConfig(
+    globalLevel: LogLevel.warning,
+    enableColors: false,
+    outputs: [
+      FileOutput(fileName: 'warnings.txt'),
+      RemoteOutput(
+        endpoint: 'https://api.example.com/logs',
+        allowedLevels: {'ERROR', 'FATAL'},
+      ),
+    ],
+    allowUnregisteredModules: false,
+    disabledLevels: {LogLevel.trace, LogLevel.debug, LogLevel.info},
+  ),
+);
+
+LoggerImpl.initialize(config);
+```
 
 If a log statement doesn't pass the filter:
 1. Message builder is never called
@@ -348,13 +749,16 @@ class ErrorHandler {
 
   ErrorHandler() {
     _log = LoggerImpl.forModule(
-      const LogModule(
-        moduleName: 'ErrorHandler',
-        moduleType: ModuleType.other,
+      developmentConfig: EnvironmentLogConfig(
+        globalLevel: LogLevel.trace,
+        enableColors: false,
+        outputs: [ConsoleOutput()],
       ),
-    );
-  }
+    ));
+  });
 
+  tearDown(() async {
+    await
   void handleError(Object error, StackTrace stackTrace) {
     if (error is NetworkException) {
       _log.warning(() => 'Network error occurred', error, stackTrace);
@@ -363,15 +767,45 @@ class ErrorHandler {
     } else {
       _log.error(() => 'Unexpected error', error, stackTrace);
     }
-  }
-}
-```
+  } with appropriate module types
+3. **Use appropriate log levels** (don't overuse trace/debug)
+4. **Include context** in log messages (user IDs, request IDs, etc.)
+5. **Use structured logging** for important data points
+6. **Configure different settings per environment** (verbose in dev, minimal in release)
+7. **Keep module names consistent** and descriptive
+8. **Use specific module types** for better filtering (avoid overusing `other`)
+9. **Test logging configuration** in different environments
+10. **Document module naming conventions** in your project
+11. **Use FileOutput for persistent debugging** in production
+12. **Use RemoteOutput only for critical errors** (ERROR/FATAL) to avoid overwhelming servers
+13. **Disable console output in release** to save resources
+14. **Enable strict mode in production** (`allowUnregisteredModules: false`)
+15. **Configure file rotation** to prevent disk space issues
 
-## Testing
+## Environment-Specific Best Practices
 
-```dart
-void main() {
-  setUp(() {
+### Development
+✅ **DO**: Use console output with colors  
+✅ **DO**: Set global level to trace or debug  
+✅ **DO**: Allow unregistered modules  
+❌ **DON'T**: Use file or remote outputs unless debugging specific issues
+
+### Profile
+✅ **DO**: Use both console and file outputs  
+✅ **DO**: Set global level to debug  
+✅ **DO**: Enable colors for better readability  
+❌ **DON'T**: Send logs to remote in profile mode
+
+### Release
+✅ **DO**: Use file and remote outputs only  
+✅ **DO**: Set global level to error or warning  
+✅ **DO**: Disable console output  
+✅ **DO**: Enable strict module registration  
+✅ **DO**: Filter module types to reduce noise  
+✅ **DO**: Configure file rotation for disk management  
+❌ **DON'T**: Log sensitive data  
+❌ **DON'T**: Send trace/debug logs to remote  
+❌ **DON'T**: Enable colors (no effect anyway)
     LoggerImpl.initialize(LogConfig(
       globalLevel: LogLevel.trace,
       enableColors: false,
@@ -381,11 +815,18 @@ void main() {
   tearDown(() {
     LoggerImpl.dispose();
   });
-
-  test('logger filters by level', () {
-    // Test implementation
-  });
-}
+ with environment configs:
+   ```dart
+   void main() {
+     LoggerImpl.initialize(LogConfig(
+       developmentConfig: EnvironmentLogConfig(
+         globalLevel: LogLevel.info,
+         outputs: [ConsoleOutput()],
+       ),
+       releaseConfig: EnvironmentLogConfig(
+         globalLevel: LogLevel.error,
+         outputs: [FileOutput()],
+       )
 ```
 
 ## Best Practices
@@ -393,7 +834,7 @@ void main() {
 1. **Always use lazy message builders** for performance
 2. **Register modules at service/class initialization**
 3. **Use appropriate log levels** (don't overuse trace/debug)
-4. **Include context** in log messages (user IDs, request IDs, etc.)
+4. **Include context** in log messages  // Or more specific type (user IDs, request IDs, etc.)
 5. **Use structured logging** for important data points
 6. **Disable verbose logging in production** via configuration
 7. **Keep module names consistent** and descriptive

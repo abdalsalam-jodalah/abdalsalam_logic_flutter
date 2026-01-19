@@ -1,7 +1,9 @@
 // lib/src/logging/log_config.dart
 // Configuration classes for the logging system
 
+import 'package:flutter/foundation.dart';
 import 'log_level.dart';
+import 'log_environment.dart';
 
 class LogModuleConfig {
   final ModuleType type;
@@ -28,39 +30,49 @@ class LogModuleConfig {
 }
 
 class LogConfig {
-  final LogLevel globalLevel;
-  final bool enableColors;
   final Map<String, LogModuleConfig> modules;
-  final bool rejectUnregisteredModules;
-  final bool enableConsoleInRelease;
-  final Set<ModuleType>? disabledModuleTypes;
+  final EnvironmentLogConfig developmentConfig;
+  final EnvironmentLogConfig? profileConfig;
+  final EnvironmentLogConfig? releaseConfig;
 
   const LogConfig({
-    required this.globalLevel,
-    this.enableColors = true,
+    required this.developmentConfig,
+    this.profileConfig,
+    this.releaseConfig,
     this.modules = const {},
-    this.rejectUnregisteredModules = false,
-    this.enableConsoleInRelease = false,
-    this.disabledModuleTypes,
   });
 
+  EnvironmentLogConfig getConfigForCurrentEnvironment() {
+    if (kReleaseMode) {
+      return releaseConfig ?? developmentConfig;
+    } else if (kProfileMode) {
+      return profileConfig ?? developmentConfig;
+    }
+    return developmentConfig;
+  }
+
+  EnvironmentLogConfig getConfigForEnvironment(LogEnvironment environment) {
+    switch (environment) {
+      case LogEnvironment.development:
+        return developmentConfig;
+      case LogEnvironment.profile:
+        return profileConfig ?? developmentConfig;
+      case LogEnvironment.release:
+        return releaseConfig ?? developmentConfig;
+    }
+  }
+
   LogConfig copyWith({
-    LogLevel? globalLevel,
-    bool? enableColors,
     Map<String, LogModuleConfig>? modules,
-    bool? rejectUnregisteredModules,
-    bool? enableConsoleInRelease,
-    Set<ModuleType>? disabledModuleTypes,
+    EnvironmentLogConfig? developmentConfig,
+    EnvironmentLogConfig? profileConfig,
+    EnvironmentLogConfig? releaseConfig,
   }) {
     return LogConfig(
-      globalLevel: globalLevel ?? this.globalLevel,
-      enableColors: enableColors ?? this.enableColors,
       modules: modules ?? this.modules,
-      rejectUnregisteredModules:
-          rejectUnregisteredModules ?? this.rejectUnregisteredModules,
-      enableConsoleInRelease:
-          enableConsoleInRelease ?? this.enableConsoleInRelease,
-      disabledModuleTypes: disabledModuleTypes ?? this.disabledModuleTypes,
+      developmentConfig: developmentConfig ?? this.developmentConfig,
+      profileConfig: profileConfig ?? this.profileConfig,
+      releaseConfig: releaseConfig ?? this.releaseConfig,
     );
   }
 }

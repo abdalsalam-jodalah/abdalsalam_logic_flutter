@@ -10,7 +10,7 @@ class AuthService {
     _log = LoggerImpl.forModule(
       const LogModule(
         moduleName: 'AuthService',
-        moduleType: ModuleType.service,
+        moduleType: ModuleType.authentication,
       ),
     );
   }
@@ -110,13 +110,38 @@ class NetworkClient {
   }
 }
 
-void demonstrateLoggingSystem() {
+void demonstrateBasicLogging() {
   final config = LogConfig(
-    globalLevel: LogLevel.debug,
-    enableColors: true,
+    developmentConfig: const EnvironmentLogConfig(
+      globalLevel: LogLevel.trace,
+      enableColors: true,
+      outputs: [ConsoleOutput()],
+      allowUnregisteredModules: true,
+    ),
+    profileConfig: const EnvironmentLogConfig(
+      globalLevel: LogLevel.debug,
+      enableColors: true,
+      outputs: [ConsoleOutput()],
+      allowUnregisteredModules: true,
+    ),
+    releaseConfig: EnvironmentLogConfig(
+      globalLevel: LogLevel.error,
+      enableColors: false,
+      outputs: [
+        FileOutput(
+          fileName: 'app_logs.txt',
+          maxFileSizeBytes: 5 * 1024 * 1024,
+        ),
+        RemoteOutput(
+          endpoint: 'https://api.example.com/logs',
+          allowedLevels: {'ERROR', 'FATAL'},
+        ),
+      ],
+      allowUnregisteredModules: false,
+    ),
     modules: {
       'AuthService': const LogModuleConfig(
-        type: ModuleType.service,
+        type: ModuleType.authentication,
         enabled: true,
         level: LogLevel.trace,
       ),
@@ -131,8 +156,6 @@ void demonstrateLoggingSystem() {
         level: LogLevel.info,
       ),
     },
-    rejectUnregisteredModules: false,
-    enableConsoleInRelease: false,
   );
 
   LoggerImpl.initialize(config);
@@ -150,21 +173,69 @@ void demonstrateLoggingSystem() {
   authService.logout();
 }
 
-void demonstrateModuleFiltering() {
+void demonstrateMultipleOutputs() {
   final config = LogConfig(
-    globalLevel: LogLevel.info,
-    enableColors: true,
-    modules: {
-      'AuthService': const LogModuleConfig(
-        type: ModuleType.service,
-        enabled: true,
-      ),
-      'NetworkClient': const LogModuleConfig(
-        type: ModuleType.network,
-        enabled: false,
-      ),
-    },
-    disabledModuleTypes: {ModuleType.viewModel},
+    developmentConfig: EnvironmentLogConfig(
+      globalLevel: LogLevel.debug,
+      enableColors: true,
+      outputs: [
+        const ConsoleOutput(),
+        FileOutput(
+          fileName: 'dev_logs.txt',
+          maxFileSizeBytes: 10 * 1024 * 1024,
+          maxBackupFiles: 3,
+        ),
+      ],
+      allowUnregisteredModules: true,
+    ),
+    releaseConfig: EnvironmentLogConfig(
+      globalLevel: LogLevel.error,
+      enableColors: false,
+      outputs: [
+        FileOutput(
+          fileName: 'production_logs.txt',
+          maxFileSizeBytes: 20 * 1024 * 1024,
+          maxBackupFiles: 10,
+        ),
+        RemoteOutput(
+          endpoint: 'https://crashreports.example.com/api/logs',
+          headers: {'Authorization': 'Bearer your-token-here'},
+          batchInterval: Duration(seconds: 60),
+          maxBatchSize: 50,
+          allowedLevels: {'ERROR', 'FATAL'},
+        ),
+      ],
+      allowUnregisteredModules: false,
+    ),
+  );
+
+  LoggerImpl.initialize(config);
+}
+
+void demonstrateModuleTypeFiltering() {
+  final config = LogConfig(
+    developmentConfig: const EnvironmentLogConfig(
+      globalLevel: LogLevel.debug,
+      enableColors: true,
+      outputs: [ConsoleOutput()],
+      allowUnregisteredModules: true,
+      disabledModuleTypes: {
+        ModuleType.view,
+        ModuleType.analytics,
+      },
+    ),
+    releaseConfig: const EnvironmentLogConfig(
+      globalLevel: LogLevel.warning,
+      enableColors: false,
+      outputs: [ConsoleOutput()],
+      allowUnregisteredModules: false,
+      disabledModuleTypes: {
+        ModuleType.view,
+        ModuleType.viewModel,
+        ModuleType.analytics,
+        ModuleType.cache,
+      },
+    ),
   );
 
   LoggerImpl.initialize(config);
@@ -172,17 +243,144 @@ void demonstrateModuleFiltering() {
 
 void demonstrateStrictMode() {
   final config = LogConfig(
-    globalLevel: LogLevel.warning,
-    enableColors: true,
-    rejectUnregisteredModules: true,
+    developmentConfig: const EnvironmentLogConfig(
+      globalLevel: LogLevel.info,
+      enableColors: true,
+      outputs: [ConsoleOutput()],
+      allowUnregisteredModules: false,
+    ),
     modules: {
       'AuthService': const LogModuleConfig(
-        type: ModuleType.service,
+        type: ModuleType.authentication,
         enabled: true,
         level: LogLevel.debug,
+      ),
+      'PaymentService': const LogModuleConfig(
+        type: ModuleType.payment,
+        enabled: true,
+        level: LogLevel.trace,
       ),
     },
   );
 
   LoggerImpl.initialize(config);
 }
+
+void demonstrateLevelFiltering() {
+  final config = LogConfig(
+    developmentConfig: const EnvironmentLogConfig(
+      globalLevel: LogLevel.trace,
+      enableColors: true,
+      outputs: [ConsoleOutput()],
+      allowUnregisteredModules: true,
+    ),
+    releaseConfig: const EnvironmentLogConfig(
+      globalLevel: LogLevel.error,
+      enableColors: false,
+      outputs: [ConsoleOutput()],
+      allowUnregisteredModules: false,
+      disabledLevels: {
+        LogLevel.trace,
+        LogLevel.debug,
+        LogLevel.info,
+      },
+    ),
+  );
+
+  LoggerImpl.initialize(config);
+}
+
+void demonstrateComprehensiveModuleTypes() {
+  final config = LogConfig(
+    developmentConfig: const EnvironmentLogConfig(
+      globalLevel: LogLevel.debug,
+      enableColors: true,
+      outputs: [ConsoleOutput()],
+      allowUnregisteredModules: true,
+    ),
+    modules: {
+      'AuthService': const LogModuleConfig(
+        type: ModuleType.authentication,
+        enabled: true,
+      ),
+      'PermissionManager': const LogModuleConfig(
+        type: ModuleType.authorization,
+        enabled: true,
+      ),
+      'ApiClient': const LogModuleConfig(
+        type: ModuleType.api,
+        enabled: true,
+      ),
+      'DatabaseService': const LogModuleConfig(
+        type: ModuleType.database,
+        enabled: true,
+      ),
+      'CacheManager': const LogModuleConfig(
+        type: ModuleType.cache,
+        enabled: true,
+      ),
+      'BackgroundWorker': const LogModuleConfig(
+        type: ModuleType.background,
+        enabled: true,
+      ),
+      'TaskScheduler': const LogModuleConfig(
+        type: ModuleType.scheduler,
+        enabled: true,
+      ),
+      'AnalyticsService': const LogModuleConfig(
+        type: ModuleType.analytics,
+        enabled: false,
+      ),
+      'CrashReporter': const LogModuleConfig(
+        type: ModuleType.crashReporting,
+        enabled: true,
+        level: LogLevel.error,
+      ),
+      'PaymentGateway': const LogModuleConfig(
+        type: ModuleType.payment,
+        enabled: true,
+        level: LogLevel.info,
+      ),
+      'MediaProcessor': const LogModuleConfig(
+        type: ModuleType.media,
+        enabled: true,
+      ),
+      'LocationService': const LogModuleConfig(
+        type: ModuleType.location,
+        enabled: true,
+      ),
+      'PushNotifications': const LogModuleConfig(
+        type: ModuleType.push,
+        enabled: true,
+      ),
+      'DeepLinkHandler': const LogModuleConfig(
+        type: ModuleType.deepLink,
+        enabled: true,
+      ),
+      'BiometricAuth': const LogModuleConfig(
+        type: ModuleType.biometric,
+        enabled: true,
+      ),
+      'EncryptionService': const LogModuleConfig(
+        type: ModuleType.encryption,
+        enabled: true,
+        level: LogLevel.warning,
+      ),
+      'SyncEngine': const LogModuleConfig(
+        type: ModuleType.sync,
+        enabled: true,
+      ),
+      'PrefetchManager': const LogModuleConfig(
+        type: ModuleType.prefetch,
+        enabled: true,
+      ),
+      'FileManager': const LogModuleConfig(
+        type: ModuleType.fileSystem,
+        enabled: true,
+      ),
+    },
+  );
+
+  LoggerImpl.initialize(config);
+}
+

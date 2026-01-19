@@ -1,15 +1,16 @@
 // lib/src/logging/log_filter.dart
 // Filtering logic for log messages based on level, module, and configuration
 
-import 'package:flutter/foundation.dart';
 import 'log_config.dart';
+import 'log_environment.dart';
 import 'log_level.dart';
 import 'log_module.dart';
 
 class LogFilter {
   final LogConfig config;
+  final EnvironmentLogConfig envConfig;
 
-  const LogFilter(this.config);
+  const LogFilter(this.config, this.envConfig);
 
   bool shouldLog({
     required LogLevel level,
@@ -19,7 +20,11 @@ class LogFilter {
       return false;
     }
 
-    if (config.disabledModuleTypes?.contains(module.moduleType) ?? false) {
+    if (envConfig.disabledLevels?.contains(level) ?? false) {
+      return false;
+    }
+
+    if (envConfig.disabledModuleTypes?.contains(module.moduleType) ?? false) {
       return false;
     }
 
@@ -30,29 +35,19 @@ class LogFilter {
         return false;
       }
 
-      final effectiveLevel = moduleConfig.level ?? config.globalLevel;
+      final effectiveLevel = moduleConfig.level ?? envConfig.globalLevel;
       return level >= effectiveLevel;
     }
 
-    if (config.rejectUnregisteredModules) {
+    if (!envConfig.allowUnregisteredModules) {
       return false;
     }
 
-    final effectiveLevel = module.defaultLevel ?? config.globalLevel;
+    final effectiveLevel = module.defaultLevel ?? envConfig.globalLevel;
     return level >= effectiveLevel;
   }
 
   bool shouldEnableColors() {
-    if (kReleaseMode) {
-      return false;
-    }
-    return config.enableColors;
-  }
-
-  bool shouldOutputToConsole() {
-    if (kReleaseMode) {
-      return config.enableConsoleInRelease;
-    }
-    return true;
+    return envConfig.enableColors;
   }
 }
