@@ -62,6 +62,18 @@ export 'src/role_management/role_manager_impl.dart';
 
 export 'src/prefetch/prefetch_manager.dart';
 export 'src/prefetch/prefetch_manager_impl.dart';
+export 'src/prefetch/prefetch_service.dart';
+export 'src/prefetch/prefetch_service_impl.dart';
+export 'src/prefetch/prefetch_orchestrator.dart';
+export 'src/prefetch/prefetch_request.dart';
+export 'src/prefetch/prefetch_result.dart';
+export 'src/prefetch/prefetch_status.dart';
+export 'src/prefetch/prefetch_priority.dart';
+export 'src/prefetch/prefetch_timing.dart';
+export 'src/prefetch/prefetch_paging_config.dart';
+export 'src/prefetch/prefetch_exception.dart';
+export 'src/prefetch/prefetch_executor.dart';
+export 'src/prefetch/prefetch_http_executor.dart';
 
 export 'src/fcm/fcm_service.dart';
 export 'src/fcm/fcm_service_impl.dart';
