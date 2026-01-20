@@ -92,3 +92,15 @@ export 'src/share/share_service_impl.dart';
 
 export 'src/update_manager/update_manager.dart';
 export 'src/update_manager/update_manager_impl.dart';
+
+export 'src/runtime_control/app_control.dart';
+export 'src/runtime_control/app_control_runtime.dart';
+export 'src/runtime_control/lifecycle_phase.dart';
+export 'src/runtime_control/reset_level.dart';
+export 'src/runtime_control/runtime_domain.dart';
+export 'src/runtime_control/runtime_config.dart';
+export 'src/runtime_control/runtime_exception.dart';
+export 'src/runtime_control/domain_registry.dart';
+export 'src/runtime_control/state_controller.dart';
+export 'src/runtime_control/ui_tree_controller.dart';
+export 'src/runtime_control/runtime_controlled_app.dart';
