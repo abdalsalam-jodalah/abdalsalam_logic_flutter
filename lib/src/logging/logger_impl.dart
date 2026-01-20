@@ -18,7 +18,7 @@ class LoggerImpl implements Logger {
   static LoggerModuleRegistryConfig? _moduleConfig;
   static LogFilter? _filter;
   static LogFormatter? _formatter;
-  static Map<LogTarget, LogOutput> _outputs = {};
+  static final Map<LogTarget, LogOutput> _outputs = {};
   static bool _initialized = false;
 
   final LogModule _module;

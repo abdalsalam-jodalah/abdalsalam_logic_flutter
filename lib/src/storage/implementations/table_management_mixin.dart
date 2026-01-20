@@ -336,8 +336,9 @@ mixin TableManagementMixin implements TableManagementStorage {
     if (type.contains('INT')) return FieldType.integer;
     if (type.contains('REAL') ||
         type.contains('FLOAT') ||
-        type.contains('DOUBLE'))
+        type.contains('DOUBLE')) {
       return FieldType.double;
+    }
     if (type.contains('BLOB')) return FieldType.blob;
     return FieldType.string;
   }

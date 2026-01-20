@@ -39,9 +39,11 @@ mixin PredicateDeletableMixin<ID, T>
 
   /// Get all entities.
   /// Must be available from EntityStorage interface.
+  @override
   Future<List<T>> getAll();
 
   /// Delete entity by ID.
   /// Must be available from EntityStorage interface.
+  @override
   Future<bool> delete(ID id);
 }

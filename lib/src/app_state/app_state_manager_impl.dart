@@ -572,7 +572,7 @@ class AppStateManagerImpl
       );
 
       _deviceController.add(_deviceInfo_!);
-    } catch (error, stackTrace) {
+    } catch (error) {
     }
   }
 

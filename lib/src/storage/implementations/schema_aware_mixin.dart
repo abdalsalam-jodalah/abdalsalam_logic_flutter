@@ -12,9 +12,7 @@ mixin SchemaAwareMixin implements SchemaAwareStorage {
   @override
   Future<SchemaDescriptor> getSchema() async {
     try {
-      if (_currentSchema == null) {
-        _currentSchema = await loadSchemaFromStorage();
-      }
+      _currentSchema ??= await loadSchemaFromStorage();
       return _currentSchema!;
     } catch (e) {
       throw StorageOperationException(

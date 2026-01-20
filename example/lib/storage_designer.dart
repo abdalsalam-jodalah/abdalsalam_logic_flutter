@@ -222,7 +222,7 @@ class _SchemaPartState extends State<_SchemaPart> {
                 SizedBox(
                   width: 110,
                   child: DropdownButtonFormField<String>(
-                    value: col.type,
+                    initialValue: col.type,
                     isExpanded: false,
                     items: ['TEXT', 'INTEGER', 'REAL', 'BLOB']
                         .map((t) => DropdownMenuItem(value: t, child: Text(t)))
@@ -776,7 +776,7 @@ class _DataPartState extends State<_DataPart> {
             const SizedBox(width: 8),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: prefType,
+                initialValue: prefType,
                 items: ['String', 'int', 'double', 'bool']
                     .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                     .toList(),
