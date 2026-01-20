@@ -1,7 +1,7 @@
 // lib/examples/runtime_control_example.dart
 
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

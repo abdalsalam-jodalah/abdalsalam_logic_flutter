@@ -1,19 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 import 'package:abdalsalam_logic_flutter/examples/app_state_detection_example.dart';
+import 'package:abdalsalam_logic_flutter/examples/runtime_control_comprehensive_ui.dart';
 import 'storage_designer.dart';
 import 'storage_inspector.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  final logger = LoggerServiceImpl();
+  final logConfig = LogConfig(
+    coreConfig: LoggerCoreConfig(
+      environment: LogEnvironment.development,
+      environmentLevels: const {
+        LogEnvironment.development: LogLevel.debug,
+        LogEnvironment.profile: LogLevel.info,
+        LogEnvironment.release: LogLevel.warning,
+      },
+      targetsPerEnvironment: const {
+        LogEnvironment.development: {LogTarget.console},
+        LogEnvironment.profile: {LogTarget.console},
+        LogEnvironment.release: {LogTarget.console, LogTarget.file},
+      },
+      allowUnregisteredModules: true,
+      strictMode: false,
+    ),
+    moduleConfig: const LoggerModuleRegistryConfig(
+      globalLevel: LogLevel.debug,
+      enableColors: true,
+      modules: {},
+    ),
+  );
   
-  // Create config with all features enabled for demo purposes
-  // In production, only enable features you actually need
+  LoggerImpl.initialize(logConfig);
+  
+  AppControl.initialize(config: const RuntimeConfig.development());
+  AppControl.registerDomains([
+    LoggingDomain(),
+    StorageDomain(),
+    NetworkingDomain(),
+    AuthDomain(),
+    AppStateDomain(),
+    CacheDomain(),
+    SyncDomain(),
+  ]);
+  await AppControl.start();
+  
   const config = AppStateConfig.all();
   
-  final appStateManager = AppStateManagerImpl.create(logger, config: config);
+  final appStateManager = AppStateManagerImpl.create(config: config);
   await appStateManager.initialize();
   
   runApp(MyApp(appStateManager: appStateManager));
@@ -80,6 +114,15 @@ class HomeMenu extends StatelessWidget {
                 ));
               },
               child: const Text('Storage Inspector'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const RuntimeControlDemoApp(),
+                ));
+              },
+              child: const Text('Runtime Control Demo'),
             ),
           ],
         ),

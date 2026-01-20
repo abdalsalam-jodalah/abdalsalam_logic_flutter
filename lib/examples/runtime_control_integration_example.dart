@@ -287,8 +287,8 @@ class AppStateDomain implements RuntimeDomain, RuntimeDomainMetadata {
   
   @override
   Future<void> initialize() async {
-    _appStateManager = AppStateManagerImpl();
-    await _appStateManager.initialize(const AppStateConfig.minimal());
+    _appStateManager = AppStateManagerImpl.create(config: const AppStateConfig.minimal());
+    await _appStateManager.initialize();
     _initialized = true;
   }
   
@@ -296,7 +296,8 @@ class AppStateDomain implements RuntimeDomain, RuntimeDomainMetadata {
   Future<void> reset(ResetLevel level) async {
     if (level.shouldResetTransientState) {
       await _appStateManager.dispose();
-      await _appStateManager.initialize(const AppStateConfig.minimal());
+      _appStateManager = AppStateManagerImpl.create(config: const AppStateConfig.minimal());
+      await _appStateManager.initialize();
     }
   }
   

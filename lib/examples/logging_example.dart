@@ -1,4 +1,7 @@
 // lib/examples/logging_example.dart
+// NOTE: This file uses deprecated LogConfig API and needs to be updated to use
+// LoggerCoreConfig and LoggerModuleRegistryConfig. See example/lib/main.dart for current usage.
+// @deprecated - Under maintenance
 // Comprehensive logging system usage examples
 
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';

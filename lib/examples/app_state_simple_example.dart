@@ -19,8 +19,7 @@ class _SimpleAppStateExampleState extends State<SimpleAppStateExample> {
   }
 
   Future<void> _initializeAppState() async {
-    final logger = LoggerServiceImpl();
-    appStateManager = AppStateManagerImpl.create(logger);
+    appStateManager = AppStateManagerImpl.create();
     await appStateManager.initialize();
 
     _setupStateListeners();

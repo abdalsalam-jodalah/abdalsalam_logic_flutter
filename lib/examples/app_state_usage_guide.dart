@@ -8,8 +8,7 @@ import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 
 // Initialize in main.dart
 Future<void> initializeAppState() async {
-  final logger = LoggerServiceImpl();
-  final appStateManager = AppStateManagerImpl.create(logger);
+  final appStateManager = AppStateManagerImpl.create();
   await appStateManager.initialize();
 
   // Now you can access all state information

@@ -6,9 +6,7 @@ import 'package:abdalsalam_logic_flutter_example/main.dart';
 
 void main() {
   testWidgets('App state detection example loads', (WidgetTester tester) async {
-    // Build our app with required appStateManager
-    final logger = LoggerServiceImpl();
-    final appStateManager = AppStateManagerImpl.create(logger);
+    final appStateManager = AppStateManagerImpl.create();
     await appStateManager.initialize();
     
     await tester.pumpWidget(MyApp(appStateManager: appStateManager));

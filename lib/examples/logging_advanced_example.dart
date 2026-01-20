@@ -1,5 +1,7 @@
 // lib/examples/logging_advanced_example.dart
 // Advanced logging examples showcasing new split configuration architecture
+// NOTE: This file uses deprecated LogConfig API and needs to be updated.
+// @deprecated - Under maintenance
 
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 
