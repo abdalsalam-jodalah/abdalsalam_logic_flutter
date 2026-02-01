@@ -33,6 +33,8 @@ class MyApp extends StatelessWidget {
 }
 
 class RuntimeControlDemo extends StatefulWidget {
+  const RuntimeControlDemo({super.key});
+
   @override
   State<RuntimeControlDemo> createState() => _RuntimeControlDemoState();
 }

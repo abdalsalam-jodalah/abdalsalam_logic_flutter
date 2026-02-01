@@ -21,8 +21,8 @@ class IllegalLifecycleTransitionException extends RuntimeException {
 }
 
 class DomainRegistrationException extends RuntimeException {
-  DomainRegistrationException(String message)
-      : super(message, code: 'DOMAIN_REGISTRATION_ERROR');
+  DomainRegistrationException(super.message)
+      : super(code: 'DOMAIN_REGISTRATION_ERROR');
 }
 
 class DomainDependencyException extends RuntimeException {
@@ -35,11 +35,11 @@ class DomainDependencyException extends RuntimeException {
 }
 
 class RuntimeInitializationException extends RuntimeException {
-  RuntimeInitializationException(String message, {dynamic details})
-      : super(message, code: 'INITIALIZATION_ERROR', details: details);
+  RuntimeInitializationException(super.message, {super.details})
+      : super(code: 'INITIALIZATION_ERROR');
 }
 
 class UnregisteredDomainException extends RuntimeException {
-  UnregisteredDomainException(String message)
-      : super(message, code: 'UNREGISTERED_DOMAIN');
+  UnregisteredDomainException(super.message)
+      : super(code: 'UNREGISTERED_DOMAIN');
 }

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 import 'package:abdalsalam_logic_flutter/examples/app_state_detection_example.dart';
 import 'package:abdalsalam_logic_flutter/examples/runtime_control_comprehensive_ui.dart';
+import 'package:abdalsalam_logic_flutter/examples/runtime_control_interactive_demo.dart';
 import 'storage_designer.dart';
 import 'storage_inspector.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  final logConfig = LogConfig(
+  const logConfig = LogConfig(
     coreConfig: LoggerCoreConfig(
       environment: LogEnvironment.development,
       environmentLevels: const {
@@ -119,10 +120,19 @@ class HomeMenu extends StatelessWidget {
             FilledButton(
               onPressed: () {
                 Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const RuntimeControlInteractiveDemo(),
+                ));
+              },
+              child: const Text('Runtime Control (Interactive)'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const RuntimeControlDemoApp(),
                 ));
               },
-              child: const Text('Runtime Control Demo'),
+              child: const Text('Runtime Control (Full Demo)'),
             ),
           ],
         ),
