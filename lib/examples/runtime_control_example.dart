@@ -1,6 +1,7 @@
 // lib/examples/runtime_control_example.dart
 
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import '../src/runtime_control/domains/auth_runtime_domain.dart';
 import '../src/runtime_control/domains/storage_runtime_domain.dart';
