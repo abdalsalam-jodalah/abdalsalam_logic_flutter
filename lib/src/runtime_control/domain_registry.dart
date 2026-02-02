@@ -204,7 +204,6 @@ class DomainRegistry {
     // Rule 6: Domain must implement canReset if it has reset logic
     if (!domain.canReset) {
       // This is a warning - we'll allow non-resettable domains but log it
-      print('⚠️ Warning: Domain ${domain.domainId} is not resettable. Consider implementing reset logic.');
     }
   }
   
@@ -251,8 +250,6 @@ class DomainRegistry {
     
     for (final entry in priorityGroups.entries) {
       if (entry.value.length > 1) {
-        print('ℹ️ Note: Multiple domains have priority ${entry.key}: ${entry.value.join(", ")}');
-        print('   Dependencies will determine actual order.');
       }
     }
   }

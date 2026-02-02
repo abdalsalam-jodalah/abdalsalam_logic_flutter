@@ -43,7 +43,6 @@ class _RuntimeErrorOverlayState extends State<RuntimeErrorOverlay> with WidgetsB
     if (widget.showErrors) {
       // Catch Flutter errors
       FlutterError.onError = (FlutterErrorDetails details) {
-        print('🔥 FLUTTER ERROR OVERLAY: ${details.exception}');
         debugPrint('Context: ${details.context}');
         debugPrint('Stack: ${details.stack}');
         _addError(ErrorInfo(
@@ -56,7 +55,6 @@ class _RuntimeErrorOverlayState extends State<RuntimeErrorOverlay> with WidgetsB
 
       // Catch Dart errors
       PlatformDispatcher.instance.onError = (error, stack) {
-        print('🔥 PLATFORM ERROR OVERLAY: $error');
         debugPrint('Stack: $stack');
         _addError(ErrorInfo(
           error: error,
@@ -79,7 +77,6 @@ class _RuntimeErrorOverlayState extends State<RuntimeErrorOverlay> with WidgetsB
   void _addError(ErrorInfo errorInfo) {
     if (!widget.showErrors || !mounted) return;
 
-    print('🚨 ERROR OVERLAY: ${errorInfo.context} - ${errorInfo.error}');
     debugPrint('Error timestamp: ${errorInfo.timestamp}');
 
     setState(() {
@@ -117,7 +114,7 @@ class _RuntimeErrorOverlayState extends State<RuntimeErrorOverlay> with WidgetsB
         child: Material(
           elevation: 8,
           borderRadius: BorderRadius.circular(8),
-          color: Colors.red.shade800.withOpacity(0.95),
+          color: Colors.red.shade800.withValues(alpha: 0.95),
           child: Container(
             constraints: const BoxConstraints(maxHeight: 200),
             child: Column(

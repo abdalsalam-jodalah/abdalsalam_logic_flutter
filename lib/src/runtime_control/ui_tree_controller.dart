@@ -260,8 +260,9 @@ class UITreeController {
     // Note: RenderObject.clearSemantics() is not available as static method
     
     // Force garbage collection of render objects
-    if (RendererBinding.instance.renderView.child != null) {
-      RendererBinding.instance.renderView.child!.visitChildren((child) {
+    if (RendererBinding.instance.renderViews.isNotEmpty &&
+        RendererBinding.instance.renderViews.first.child != null) {
+      RendererBinding.instance.renderViews.first.child!.visitChildren((child) {
         child.markNeedsLayout();
         child.markNeedsPaint();
       });
