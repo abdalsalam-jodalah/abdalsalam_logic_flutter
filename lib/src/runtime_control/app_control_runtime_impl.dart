@@ -78,6 +78,13 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   
   @override
   Future<void> restart() async {
+    // Allow restart from any state for recovery
+    if (_currentPhase == LifecyclePhase.error || _currentPhase == LifecyclePhase.disposed) {
+      // Reset to allow restart
+      _currentPhase = LifecyclePhase.uninitialized;
+      _isStarted = false;
+    }
+    
     await _transitionTo(LifecyclePhase.restarting);
     _emitEvent(RuntimeEvent.restarting());
     
@@ -138,6 +145,8 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   
   @override
   Future<void> refreshUI() async {
+    _ensureRunning('refreshUI');
+    
     await _transitionTo(LifecyclePhase.refreshing);
     _emitEvent(RuntimeEvent.refreshing(ResetLevel.uiOnly));
     
@@ -147,6 +156,7 @@ class AppControlRuntimeImpl implements AppControlRuntime {
       await _transitionTo(LifecyclePhase.running);
       _emitEvent(RuntimeEvent.refreshed(ResetLevel.uiOnly));
     } catch (e) {
+      await _transitionTo(LifecyclePhase.error);
       _emitEvent(RuntimeEvent.error('Failed to refresh UI', e));
       rethrow;
     }
@@ -154,6 +164,8 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   
   @override
   Future<void> refreshAllTrees() async {
+    _ensureRunning('refreshAllTrees');
+    
     await _transitionTo(LifecyclePhase.refreshing);
     _emitEvent(RuntimeEvent.refreshing(ResetLevel.soft));
     
@@ -163,6 +175,7 @@ class AppControlRuntimeImpl implements AppControlRuntime {
       await _transitionTo(LifecyclePhase.running);
       _emitEvent(RuntimeEvent.refreshed(ResetLevel.soft));
     } catch (e) {
+      await _transitionTo(LifecyclePhase.error);
       _emitEvent(RuntimeEvent.error('Failed to refresh all trees', e));
       rethrow;
     }
@@ -170,6 +183,8 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   
   @override
   Future<void> resetStates(ResetLevel level) async {
+    _ensureRunning('resetStates');
+    
     await _transitionTo(LifecyclePhase.resetting);
     _emitEvent(RuntimeEvent.refreshing(level));
     
@@ -195,6 +210,29 @@ class AppControlRuntimeImpl implements AppControlRuntime {
     }
   }
   
+  void _ensureRunning(String operation) {
+    // Allow operations if not started but allow recovery from error
+    if (!_isStarted && _currentPhase == LifecyclePhase.uninitialized) {
+      // Auto-start if needed
+      start();
+      return;
+    }
+    
+    // Allow operations in error state for recovery
+    if (_currentPhase == LifecyclePhase.error) {
+      // Reset to running state for recovery
+      _currentPhase = LifecyclePhase.running;
+      _isStarted = true;
+      return;
+    }
+    
+    if (_currentPhase != LifecyclePhase.running && 
+        _currentPhase != LifecyclePhase.paused && 
+        _currentPhase != LifecyclePhase.initialized) {
+      throw RuntimeException('Cannot call $operation while in phase: $_currentPhase');
+    }
+  }
+  
   @override
   Future<void> resetRuntime() async {
     await resetStates(ResetLevel.complete);
@@ -202,6 +240,10 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   
   @override
   Future<void> stop() async {
+    if (!_isStarted && _currentPhase == LifecyclePhase.uninitialized) {
+      throw RuntimeException('Cannot stop - runtime not started');
+    }
+    
     await _transitionTo(LifecyclePhase.disposing);
     _emitEvent(RuntimeEvent.stopping());
     
@@ -214,9 +256,9 @@ class AppControlRuntimeImpl implements AppControlRuntime {
       _isStarted = false;
       _emitEvent(RuntimeEvent.stopped());
       
-      _phaseStream.close();
-      _eventStream.close();
+      // Don't close streams - allow restart
     } catch (e) {
+      await _transitionTo(LifecyclePhase.error);
       _emitEvent(RuntimeEvent.error('Failed to stop runtime', e));
       rethrow;
     }
@@ -246,7 +288,7 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   }
   
   void _validateTransition(LifecyclePhase from, LifecyclePhase to) {
-    if (from.isTerminal && to != LifecyclePhase.uninitialized) {
+    if (!from.canTransitionToPhase(to)) {
       throw IllegalLifecycleTransitionException(from.toString(), to.toString());
     }
   }
