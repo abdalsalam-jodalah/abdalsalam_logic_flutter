@@ -6,6 +6,7 @@ import 'dart:async';
 import 'app_control_runtime.dart';
 import 'domain_registry.dart';
 import 'lifecycle_phase.dart';
+import 'platform_restart.dart';
 import 'reset_level.dart';
 import 'runtime_domain.dart';
 import 'runtime_exception.dart';
@@ -26,7 +27,7 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   
   AppControlRuntimeImpl() {
     _registry = DomainRegistry();
-    _uiController = UITreeController();
+    _uiController = UITreeController.instance;
     _stateController = StateController(_registry);
   }
   
@@ -64,25 +65,69 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   }
   
   @override
+  Future<void> platformRestart() async {
+    try {
+      _emitEvent(RuntimeEvent.platformRestarting());
+      await _platformRestart();
+    } catch (e) {
+      await _transitionTo(LifecyclePhase.error);
+      _emitEvent(RuntimeEvent.error('Platform restart failed', e));
+      rethrow;
+    }
+  }
+  
+  @override
   Future<void> restart() async {
     await _transitionTo(LifecyclePhase.restarting);
     _emitEvent(RuntimeEvent.restarting());
     
     try {
-      await _stateController.disposeAll();
-      await _uiController.recreateAllTrees();
+      // First try graceful restart
+      await _gracefulRestart();
       
-      await _transitionTo(LifecyclePhase.uninitialized);
-      
-      _isStarted = false;
-      
-      await start();
-      
-      _emitEvent(RuntimeEvent.restarted());
     } catch (e) {
-      await _transitionTo(LifecyclePhase.error);
-      _emitEvent(RuntimeEvent.error('Failed to restart runtime', e));
-      rethrow;
+      // If graceful restart fails, try platform restart
+      try {
+        await _platformRestart();
+      } catch (platformError) {
+        await _transitionTo(LifecyclePhase.error);
+        _emitEvent(RuntimeEvent.error('Failed to restart runtime', platformError));
+        rethrow;
+      }
+    }
+  }
+  
+  Future<void> _gracefulRestart() async {
+    // Dispose all domains
+    await _stateController.disposeAll();
+    
+    // Clear UI completely
+    await _uiController.recreateAllTrees();
+    
+    // Reset to uninitialized state
+    await _transitionTo(LifecyclePhase.uninitialized);
+    _isStarted = false;
+    
+    // Restart
+    await start();
+    _emitEvent(RuntimeEvent.restarted());
+  }
+  
+  Future<void> _platformRestart() async {
+    final platformRestart = PlatformRestart.instance;
+    
+    if (platformRestart.supportsRestart) {
+      _emitEvent(RuntimeEvent.platformRestarting());
+      
+      // Give a moment for the event to be processed
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      final success = await platformRestart.restartApp();
+      if (!success) {
+        throw RuntimeException('Platform restart failed');
+      }
+    } else {
+      throw RuntimeException('Platform restart not supported on ${platformRestart.platformName}');
     }
   }
   

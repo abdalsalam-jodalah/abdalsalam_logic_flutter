@@ -37,6 +37,8 @@ class AppControl {
   
   static Future<void> restart() => instance.restart();
   
+  static Future<void> platformRestart() => instance.platformRestart();
+  
   static Future<void> refreshApp() => instance.refreshApp();
   
   static Future<void> refreshUI() => instance.refreshUI();

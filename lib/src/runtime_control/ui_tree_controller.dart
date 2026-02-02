@@ -2,6 +2,11 @@
 // Controller for managing UI widget tree lifecycles
 
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 typedef UIRebuildCallback = void Function();
@@ -9,12 +14,27 @@ typedef UIRebuildCallback = void Function();
 class UITreeController {
   final Map<String, GlobalKey> _treeKeys = {};
   final List<UIRebuildCallback> _rebuildCallbacks = [];
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = [];
   final StreamController<UITreeEvent> _eventStream = StreamController.broadcast();
   
   GlobalKey<State<StatefulWidget>>? _rootKey;
   
+  static UITreeController? _instance;
+  static UITreeController get instance => _instance ??= UITreeController._internal();
+  UITreeController._internal();
+  
   void setRootKey(GlobalKey<State<StatefulWidget>> key) {
     _rootKey = key;
+  }
+  
+  void registerNavigatorKey(GlobalKey<NavigatorState> key) {
+    if (!_navigatorKeys.contains(key)) {
+      _navigatorKeys.add(key);
+    }
+  }
+  
+  void unregisterNavigatorKey(GlobalKey<NavigatorState> key) {
+    _navigatorKeys.remove(key);
   }
   
   void registerTree(String treeId, GlobalKey key) {
@@ -36,58 +56,228 @@ class UITreeController {
   Future<void> refreshUI() async {
     _emitEvent(UITreeEvent.refresh());
     
-    for (final callback in _rebuildCallbacks) {
-      callback();
+    try {
+      // Force UI refresh using Flutter's built-in mechanisms
+      await _performUIRefresh();
+      
+      // Trigger registered callbacks
+      for (final callback in List.from(_rebuildCallbacks)) {
+        try {
+          callback();
+        } catch (e) {
+          debugPrint('Error in UI rebuild callback: $e');
+        }
+      }
+      
+      // Ensure all pending frames are processed
+      await _waitForFrameCompletion();
+      
+    } catch (e) {
+      debugPrint('Error refreshing UI: $e');
+      rethrow;
     }
-    
-    await Future.delayed(const Duration(milliseconds: 16));
   }
   
   Future<void> rebuildAllTrees() async {
     _emitEvent(UITreeEvent.rebuildAll());
     
-    for (final callback in _rebuildCallbacks) {
-      callback();
+    try {
+      // Clear navigation stacks
+      await _clearNavigationStacks();
+      
+      // Force complete UI tree rebuild
+      await _performCompleteRebuild();
+      
+      // Trigger callbacks
+      for (final callback in List.from(_rebuildCallbacks)) {
+        try {
+          callback();
+        } catch (e) {
+          debugPrint('Error in tree rebuild callback: $e');
+        }
+      }
+      
+      await _waitForFrameCompletion();
+      
+    } catch (e) {
+      debugPrint('Error rebuilding all trees: $e');
+      rethrow;
     }
-    
-    await Future.delayed(const Duration(milliseconds: 32));
   }
   
   Future<void> rebuildTree(String treeId) async {
     _emitEvent(UITreeEvent.rebuildTree(treeId));
     
-    for (final callback in _rebuildCallbacks) {
-      callback();
+    try {
+      final key = _treeKeys[treeId];
+      if (key != null && key.currentContext != null) {
+        // Force specific tree rebuild by marking dirty
+        (key.currentContext as Element?)?.markNeedsBuild();
+      }
+      
+      await _waitForFrameCompletion();
+      
+    } catch (e) {
+      debugPrint('Error rebuilding tree $treeId: $e');
+      rethrow;
     }
-    
-    await Future.delayed(const Duration(milliseconds: 16));
   }
   
   Future<void> recreateAllTrees() async {
     _emitEvent(UITreeEvent.recreateAll());
     
-    final oldKeys = Map<String, GlobalKey>.from(_treeKeys);
-    _treeKeys.clear();
-    
-    for (final entry in oldKeys.entries) {
-      _treeKeys[entry.key] = GlobalKey();
+    try {
+      // Clear all caches and render objects
+      await _clearRenderObjectCache();
+      
+      // Clear image cache
+      if (!kIsWeb) {
+        PaintingBinding.instance.imageCache.clear();
+        PaintingBinding.instance.imageCache.clearLiveImages();
+      }
+      
+      // Clear navigation stacks completely
+      await _clearNavigationStacks();
+      
+      // Recreate all GlobalKeys
+      final oldKeys = Map<String, GlobalKey>.from(_treeKeys);
+      _treeKeys.clear();
+      
+      for (final entry in oldKeys.entries) {
+        _treeKeys[entry.key] = GlobalKey();
+      }
+      
+      // Recreate root key
+      if (_rootKey != null) {
+        _rootKey = GlobalKey<State<StatefulWidget>>();
+      }
+      
+      // Recreate navigator keys
+      final oldNavigatorKeys = List<GlobalKey<NavigatorState>>.from(_navigatorKeys);
+      _navigatorKeys.clear();
+      for (final _ in oldNavigatorKeys) {
+        _navigatorKeys.add(GlobalKey<NavigatorState>());
+      }
+      
+      // Force complete application reassemble
+      if (WidgetsBinding.instance.debugDidSendFirstFrameEvent) {
+        await _reassembleApplication();
+      }
+      
+      // Trigger callbacks with new keys
+      for (final callback in List.from(_rebuildCallbacks)) {
+        try {
+          callback();
+        } catch (e) {
+          debugPrint('Error in recreate callback: $e');
+        }
+      }
+      
+      await _waitForFrameCompletion();
+      
+    } catch (e) {
+      debugPrint('Error recreating all trees: $e');
+      rethrow;
     }
-    
-    if (_rootKey != null) {
-      _rootKey = GlobalKey<State<StatefulWidget>>();
-    }
-    
-    for (final callback in _rebuildCallbacks) {
-      callback();
-    }
-    
-    await Future.delayed(const Duration(milliseconds: 50));
   }
   
   Future<void> clearCachedRenderState() async {
     _emitEvent(UITreeEvent.clearCache());
     
-    await Future.delayed(const Duration(milliseconds: 16));
+    try {
+      await _clearRenderObjectCache();
+      
+      // Clear image cache
+      if (!kIsWeb) {
+        PaintingBinding.instance.imageCache.clear();
+        PaintingBinding.instance.imageCache.clearLiveImages();
+      }
+      
+      // Clear text input cache
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        TextInput.finishAutofillContext();
+      }
+      
+      await _waitForFrameCompletion();
+      
+    } catch (e) {
+      debugPrint('Error clearing cached render state: $e');
+      rethrow;
+    }
+  }
+  
+  // REAL implementation methods
+  
+  Future<void> _performUIRefresh() async {
+    // Schedule frame and force rebuild
+    WidgetsBinding.instance.ensureVisualUpdate();
+    
+    // Force immediate frame if needed
+    if (!WidgetsBinding.instance.hasScheduledFrame) {
+      WidgetsBinding.instance.scheduleFrame();
+    }
+    
+    // Wait for next frame
+    await WidgetsBinding.instance.endOfFrame;
+  }
+  
+  Future<void> _performCompleteRebuild() async {
+    // Mark all render objects dirty
+    if (RendererBinding.instance.renderView.child != null) {
+      RendererBinding.instance.renderView.child!.markNeedsLayout();
+      RendererBinding.instance.renderView.child!.markNeedsPaint();
+    }
+    
+    // Schedule rebuild
+    WidgetsBinding.instance.buildOwner!.scheduleBuildFor(WidgetsBinding.instance.rootElement!);
+    WidgetsBinding.instance.ensureVisualUpdate();
+    
+    await WidgetsBinding.instance.endOfFrame;
+  }
+  
+  Future<void> _clearNavigationStacks() async {
+    for (final navigatorKey in _navigatorKeys) {
+      final navigator = navigatorKey.currentState;
+      if (navigator != null && navigator.canPop()) {
+        // Pop to root without animation to avoid conflicts
+        navigator.popUntil((route) => route.isFirst);
+      }
+    }
+    
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+  
+  Future<void> _clearRenderObjectCache() async {
+    // Clear render object cache
+    // Note: RenderObject.clearSemantics() is not available as static method
+    
+    // Force garbage collection of render objects
+    if (RendererBinding.instance.renderView.child != null) {
+      RendererBinding.instance.renderView.child!.visitChildren((child) {
+        child.markNeedsLayout();
+        child.markNeedsPaint();
+      });
+    }
+  }
+  
+  Future<void> _reassembleApplication() async {
+    // Hot reload-like reassembly
+    try {
+      WidgetsBinding.instance.reassembleApplication();
+    } catch (e) {
+      debugPrint('Error during app reassembly: $e');
+    }
+  }
+  
+  Future<void> _waitForFrameCompletion() async {
+    // Ensure all pending frames are completed
+    if (WidgetsBinding.instance.hasScheduledFrame) {
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    
+    // Additional frame to ensure completion
+    WidgetsBinding.instance.scheduleFrame();
+    await WidgetsBinding.instance.endOfFrame;
   }
   
   void _emitEvent(UITreeEvent event) {

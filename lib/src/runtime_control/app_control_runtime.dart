@@ -21,6 +21,8 @@ abstract class AppControlRuntime {
   
   Future<void> restart();
   
+  Future<void> platformRestart();
+  
   Future<void> refreshApp();
   
   Future<void> refreshUI();
@@ -85,6 +87,10 @@ class RuntimeEvent {
         type: RuntimeEventType.restarted,
       );
   
+  factory RuntimeEvent.platformRestarting() => RuntimeEvent._(
+        type: RuntimeEventType.platformRestarting,
+      );
+  
   factory RuntimeEvent.refreshing(ResetLevel level) => RuntimeEvent._(
         type: RuntimeEventType.refreshing,
         resetLevel: level,
@@ -116,9 +122,11 @@ enum RuntimeEventType {
   started,
   restarting,
   restarted,
+  platformRestarting,
   refreshing,
   refreshed,
   stopping,
   stopped,
   error,
 }
+
