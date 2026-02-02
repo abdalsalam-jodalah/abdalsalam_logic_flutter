@@ -27,14 +27,14 @@ class NetworkRegistryImpl implements NetworkRegistry {
     
     if (_registeredApis.containsKey(type)) {
       throw NetworkValidationException(
-        'API of type $type is already registered',
+        message: 'API of type $type is already registered',
         code: 'DUPLICATE_REGISTRATION',
       );
     }
     
     if (_identifierToType.containsKey(identifier)) {
       throw NetworkValidationException(
-        'API with identifier "$identifier" is already registered',
+        message: 'API with identifier "$identifier" is already registered',
         code: 'DUPLICATE_IDENTIFIER',
       );
     }
@@ -75,28 +75,28 @@ class NetworkRegistryImpl implements NetworkRegistry {
   void _validateApiDefinition(NetworkApi api) {
     if (api.apiTypeIdentifier.isEmpty) {
       throw NetworkValidationException(
-        'API type identifier cannot be empty',
+        message: 'API type identifier cannot be empty',
         code: 'EMPTY_IDENTIFIER',
       );
     }
     
     if (api.urlObject.baseUrl.isEmpty) {
       throw NetworkValidationException(
-        'API base URL cannot be empty',
+        message: 'API base URL cannot be empty',
         code: 'EMPTY_BASE_URL',
       );
     }
     
     if (api.urlObject.path.isEmpty) {
       throw NetworkValidationException(
-        'API path cannot be empty',
+        message: 'API path cannot be empty',
         code: 'EMPTY_PATH',
       );
     }
     
     if (api.priority < 0) {
       throw NetworkValidationException(
-        'API priority must be non-negative, got: ${api.priority}',
+        message: 'API priority must be non-negative, got: ${api.priority}',
         code: 'NEGATIVE_PRIORITY',
       );
     }

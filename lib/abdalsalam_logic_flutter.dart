@@ -1,5 +1,13 @@
 // lib/abdalsalam_logic_flutter.dart
 export 'src/core/errors/app_exception.dart';
+export 'src/core/errors/app_error_response.dart';
+export 'src/core/errors/exception_mapper.dart';
+export 'src/core/errors/network_exception.dart';
+export 'src/core/errors/auth_exception.dart';
+export 'src/core/errors/storage_exception.dart';
+export 'src/core/errors/validation_exception.dart';
+export 'src/core/errors/backend_exception.dart';
+export 'src/core/errors/unknown_app_exception.dart';
 export 'src/core/errors/error_handler.dart';
 export 'src/core/errors/error_handler_impl.dart';
 export 'src/core/interfaces/repository_interface.dart';

@@ -4,7 +4,8 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import '../app_state/app_state_manager.dart';
 import '../app_state/models/app_lifecycle_state.dart';
-import '../core/errors/app_exception.dart';
+import '../core/errors/network_exception.dart';
+import 'exceptions/networking_exceptions.dart';
 import 'request_manager.dart';
 import 'network_registry.dart';
 import 'network_api.dart';
@@ -13,7 +14,6 @@ import 'status_code_strategy.dart';
 import 'models/network_response.dart';
 import 'models/pending_request.dart';
 import 'pending_request_storage.dart';
-import 'exceptions/networking_exceptions.dart';
 
 class RequestManagerImpl implements RequestManager {
   final NetworkRegistry _registry;
@@ -93,7 +93,7 @@ class RequestManagerImpl implements RequestManager {
   ) async {
     if (!_isEnabled) {
       throw NetworkManagerDisabledException(
-        'Request manager is disabled',
+        message: 'Request manager is disabled',
         code: 'MANAGER_DISABLED',
       );
     }
@@ -105,7 +105,7 @@ class RequestManagerImpl implements RequestManager {
     
     if (!isRegistered) {
       throw NetworkUnregisteredApiException(
-        'API ${api.apiTypeIdentifier} is not registered',
+        message: 'API ${api.apiTypeIdentifier} is not registered',
         code: 'UNREGISTERED_API',
       );
     }
@@ -180,9 +180,9 @@ class RequestManagerImpl implements RequestManager {
       throw _convertDioException(e);
     } catch (e) {
       throw NetworkException(
-        'Unexpected error: $e',
+        message: 'Unexpected error: $e',
         code: 'UNEXPECTED_ERROR',
-        originalError: e,
+        originalException: e is Exception ? e : null,
       );
     }
   }
@@ -194,9 +194,9 @@ class RequestManagerImpl implements RequestManager {
     final authProvider = _authTokenProvider;
     if (authProvider == null) {
       throw NetworkAuthFailedException(
-        'Authentication required but no auth provider configured',
+        message: 'Authentication required but no auth provider configured',
         code: 'NO_AUTH_PROVIDER',
-        originalError: originalError,
+        originalException: originalError,
       );
     }
     
@@ -207,17 +207,17 @@ class RequestManagerImpl implements RequestManager {
       } else {
         await authProvider.onAuthFailure();
         throw NetworkAuthFailedException(
-          'Authentication failed and token refresh unsuccessful',
+          message: 'Authentication failed and token refresh unsuccessful',
           code: 'AUTH_REFRESH_FAILED',
-          originalError: originalError,
+          originalException: originalError,
         );
       }
     } catch (e) {
       await authProvider.onAuthFailure();
       throw NetworkAuthFailedException(
-        'Token refresh failed: $e',
+        message: 'Token refresh failed: $e',
         code: 'TOKEN_REFRESH_ERROR',
-        originalError: e,
+        originalException: e is Exception ? e : null,
       );
     }
   }
@@ -257,33 +257,33 @@ class RequestManagerImpl implements RequestManager {
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
         return NetworkTimeoutException(
-          'Request timeout: ${error.message}',
+          message: 'Request timeout: ${error.message}',
           code: 'TIMEOUT',
-          originalError: error,
+          originalException: error,
         );
       case DioExceptionType.connectionError:
         return NetworkOfflineException(
-          'Connection error: ${error.message}',
+          message: 'Connection error: ${error.message}',
           code: 'CONNECTION_ERROR',
-          originalError: error,
+          originalException: error,
         );
       case DioExceptionType.badResponse:
         return NetworkBackendException(
-          'Server error: ${error.response?.statusCode} ${error.response?.statusMessage}',
-          code: error.response?.statusCode.toString(),
-          originalError: error,
+          message: 'Server error: ${error.response?.statusCode} ${error.response?.statusMessage}',
+          code: error.response?.statusCode.toString() ?? 'SERVER_ERROR',
+          originalException: error,
         );
       case DioExceptionType.cancel:
         return NetworkException(
-          'Request cancelled',
+          message: 'Request cancelled',
           code: 'CANCELLED',
-          originalError: error,
+          originalException: error,
         );
       default:
         return NetworkException(
-          'Network error: ${error.message}',
+          message: 'Network error: ${error.message}',
           code: 'NETWORK_ERROR',
-          originalError: error,
+          originalException: error,
         );
     }
   }

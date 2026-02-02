@@ -1,50 +1,28 @@
 // lib/src/core/errors/app_exception.dart
-import 'package:equatable/equatable.dart';
+
+enum AppExceptionSeverity { info, warning, error, critical }
+
+enum AppExceptionSource { network, storage, auth, validation, permission, backend, unknown }
 
 abstract class AppException implements Exception {
   String get message;
-  String? get code;
-  dynamic get originalError;
-}
+  String get code;
+  AppExceptionSeverity get severity;
+  AppExceptionSource get source;
+  bool get isRecoverable;
+  Exception? get originalException;
+  StackTrace? get stackTrace;
 
-class BaseAppException extends AppException with EquatableMixin {
-  @override
-  final String message;
-  @override
-  final String? code;
-  @override
-  final dynamic originalError;
-
-  BaseAppException(
-    this.message, {
-    this.code,
-    this.originalError,
+  AppException copyWith({
+    String? message,
+    String? code,
+    AppExceptionSeverity? severity,
+    AppExceptionSource? source,
+    bool? isRecoverable,
+    Exception? originalException,
+    StackTrace? stackTrace,
   });
 
-  @override
-  List<Object?> get props => [message, code, originalError];
-
-  @override
-  String toString() => message;
-}
-
-class NetworkException extends BaseAppException {
-  NetworkException(super.message, {super.code, super.originalError});
-}
-
-class StorageException extends BaseAppException {
-  StorageException(super.message, {super.code, super.originalError});
-}
-
-class AuthException extends BaseAppException {
-  AuthException(super.message, {super.code, super.originalError});
-}
-
-class ValidationException extends BaseAppException {
-  ValidationException(super.message, {super.code, super.originalError});
-}
-
-class PermissionException extends BaseAppException {
-  PermissionException(super.message, {super.code, super.originalError});
+  Map<String, dynamic> toMap();
 }
 

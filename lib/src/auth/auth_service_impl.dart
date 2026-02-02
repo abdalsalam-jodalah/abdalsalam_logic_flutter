@@ -1,6 +1,6 @@
 // lib/src/auth/auth_service_impl.dart
 import 'package:firebase_auth/firebase_auth.dart';
-import '../core/errors/app_exception.dart';
+import '../core/errors/auth_exception.dart';
 import '../storage/storage_service.dart';
 import 'auth_service.dart';
 
@@ -43,14 +43,15 @@ class AuthServiceImpl implements AuthService {
       return credential.user!.uid;
     } on FirebaseAuthException catch (e) {
       throw AuthException(
-        _getAuthErrorMessage(e.code),
+        message: _getAuthErrorMessage(e.code),
         code: e.code,
-        originalError: e,
+        originalException: e,
       );
     } catch (e) {
       throw AuthException(
-        'Sign in failed',
-        originalError: e,
+        message: 'Sign in failed',
+        code: 'AUTH_SIGNIN_FAILED',
+        originalException: e is Exception ? e : null,
       );
     }
   }
@@ -76,14 +77,15 @@ class AuthServiceImpl implements AuthService {
       return credential.user!.uid;
     } on FirebaseAuthException catch (e) {
       throw AuthException(
-        _getAuthErrorMessage(e.code),
+        message: _getAuthErrorMessage(e.code),
         code: e.code,
-        originalError: e,
+        originalException: e,
       );
     } catch (e) {
       throw AuthException(
-        'Sign up failed',
-        originalError: e,
+        message: 'Sign up failed',
+        code: 'AUTH_SIGNUP_FAILED',
+        originalException: e is Exception ? e : null,
       );
     }
   }
@@ -105,14 +107,15 @@ class AuthServiceImpl implements AuthService {
       await _firebaseAuth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
       throw AuthException(
-        _getAuthErrorMessage(e.code),
+        message: _getAuthErrorMessage(e.code),
         code: e.code,
-        originalError: e,
+        originalException: e,
       );
     } catch (e) {
       throw AuthException(
-        'Password reset failed',
-        originalError: e,
+        message: 'Password reset failed',
+        code: 'AUTH_PASSWORD_RESET_FAILED',
+        originalException: e is Exception ? e : null,
       );
     }
   }

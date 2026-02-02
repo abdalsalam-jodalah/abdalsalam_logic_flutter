@@ -1,6 +1,7 @@
 // lib/src/networking/api_client_impl.dart
 import 'package:dio/dio.dart';
 import '../core/errors/app_exception.dart';
+import '../core/errors/network_exception.dart';
 import 'api_client.dart';
 
 class ApiClientImpl implements ApiClient {
@@ -173,27 +174,27 @@ class ApiClientImpl implements ApiClient {
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
         return NetworkException(
-          'Connection timeout',
+          message: 'Connection timeout',
           code: 'TIMEOUT',
-          originalError: error,
+          originalException: error,
         );
       case DioExceptionType.badResponse:
         return NetworkException(
-          error.response?.data['message'] ?? 'Server error',
-          code: error.response?.statusCode.toString(),
-          originalError: error,
+          message: error.response?.data['message'] ?? 'Server error',
+          code: error.response?.statusCode.toString() ?? 'SERVER_ERROR',
+          originalException: error,
         );
       case DioExceptionType.cancel:
         return NetworkException(
-          'Request cancelled',
+          message: 'Request cancelled',
           code: 'CANCELLED',
-          originalError: error,
+          originalException: error,
         );
       default:
         return NetworkException(
-          'Network error: ${error.message}',
+          message: 'Network error: ${error.message}',
           code: 'NETWORK_ERROR',
-          originalError: error,
+          originalException: error,
         );
     }
   }
