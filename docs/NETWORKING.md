@@ -1,678 +1,742 @@
-# API Client (Networking)
+# Networking System Documentation
 
-**Version:** 1.0.0  
-**Last Updated:** January 6, 2026  
+**Version:** 2.0.0  
+**Last Updated:** February 2, 2026  
 **Package:** abdalsalam_logic_flutter
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Core Components](#core-components)
+  - [Network API Registry](#network-api-registry)
+  - [Request Manager](#request-manager)
+  - [Network API Interface](#network-api-interface)
+  - [Authentication Provider](#authentication-provider)
+  - [Status Code Strategies](#status-code-strategies)
+- [Getting Started](#getting-started)
+- [API Definition](#api-definition)
+- [Request Execution](#request-execution)
+- [Offline & Queue Management](#offline--queue-management)
+- [Authentication Handling](#authentication-handling)
+- [Error Handling](#error-handling)
+- [Configuration Options](#configuration-options)
+- [Best Practices](#best-practices)
+- [Examples](#examples)
 
 ---
 
 ## Overview
 
-The API Client provides a unified, type-safe interface for HTTP requests with built-in authentication, error handling, and configuration management.
+The Networking System provides a comprehensive, offline-first HTTP client architecture for Flutter applications. It enforces API registration, supports priority-based offline queuing, handles authentication with automatic token refresh, and provides flexible backend response patterns.
 
 ### Key Features
 
-✅ **RESTful Operations** - GET, POST, PUT, PATCH, DELETE  
-✅ **Authentication** - Automatic token injection  
-✅ **Configuration** - Base URL and default headers  
-✅ **Error Handling** - Structured error responses  
-✅ **Type-Safe** - Strongly typed responses  
+🔐 **Registration-First Architecture** - All APIs must be explicitly registered before execution  
+🌐 **Offline-First Design** - Automatic request queuing when offline, processing when reconnected  
+🔑 **Authentication Management** - Automatic token injection, refresh, and failure handling  
+📊 **Priority-Based Queue** - Intelligent request ordering with priority levels  
+🎯 **Flexible Backend Support** - Multiple status code strategies for different API patterns  
+🛡️ **Robust Error Handling** - Typed exceptions with detailed error information  
+📱 **Connectivity Awareness** - Real-time online/offline detection and response  
+🔧 **Enable/Disable Control** - Runtime control over request execution  
+📈 **Real-Time Monitoring** - Queue count streams and connectivity status  
 
 ---
 
-## API Reference
+## Architecture
 
-### Interface: ApiClient
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Flutter Application                         │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │
+                      │ execute<TReq, TRes>()
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Request Manager                               │
+│  • Single execution gateway                                     │
+│  • Enable/disable control                                       │
+│  • Offline detection & queuing                                  │
+│  • Auth retry logic                                             │
+│  • Error conversion                                             │
+└─────────┬───────────────────────┬─────────────────────┬─────────┘
+          │                       │                     │
+          ▼                       ▼                     ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Network Registry│    │ Auth Provider   │    │ App State Mgr   │
+│ • API validation│    │ • Token refresh │    │ • Connectivity  │
+│ • Registration  │    │ • Failure hdlng │    │ • State streams │
+│ • Lookup        │    │ • Access tokens │    │ • Online detect │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  Persistent Queue Storage                       │
+│  • Hive-based storage                                           │
+│  • Priority sorting                                             │
+│  • Retry counting                                               │
+│  • Survives app restart                                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Core Components
+
+### Network API Registry
+
+The **Network API Registry** is a mandatory registration system where every API must be explicitly registered before it can be executed. This ensures API consistency and prevents runtime errors.
 
 ```dart
-abstract class ApiClient extends ServiceInterface {
-  Future<Map<String, dynamic>> get(
-    String endpoint, {
-    Map<String, dynamic>? queryParameters,
-    Map<String, String>? headers,
-  });
-
-  Future<Map<String, dynamic>> post(
-    String endpoint, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Map<String, String>? headers,
-  });
-
-  Future<Map<String, dynamic>> put(
-    String endpoint, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Map<String, String>? headers,
-  });
-
-  Future<Map<String, dynamic>> delete(
-    String endpoint, {
-    Map<String, dynamic>? queryParameters,
-    Map<String, String>? headers,
-  });
-
-  Future<Map<String, dynamic>> patch(
-    String endpoint, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Map<String, String>? headers,
-  });
-
-  void setBaseUrl(String baseUrl);
-  void setAuthToken(String? token);
-  void setDefaultHeaders(Map<String, String> headers);
+abstract class NetworkRegistry extends ServiceInterface {
+  void register<T extends NetworkApi>(T api);
+  T? getApi<T extends NetworkApi>();
+  List<NetworkApi> listApis();
+  bool isRegistered<T extends NetworkApi>();
+  void unregister<T extends NetworkApi>();
+  void clear();
 }
 ```
 
-### Methods
+**Key Features:**
+- **Mandatory Registration** - APIs must be registered before execution
+- **Duplicate Prevention** - Prevents registering the same API type multiple times
+- **Validation** - Validates API definitions during registration
+- **Type Safety** - Generic type-safe API retrieval
 
-#### get()
-```dart
-Future<Map<String, dynamic>> get(
-  String endpoint, {
-  Map<String, dynamic>? queryParameters,
-  Map<String, String>? headers,
-})
-```
-Performs a GET request to retrieve data.
+### Request Manager
 
-**Parameters:**
-- `endpoint` - API endpoint (e.g., '/users', '/posts/123')
-- `queryParameters` - Optional query string parameters
-- `headers` - Optional request headers
-
-**Returns:** Response data as Map
-
-**Example:**
-```dart
-// Simple GET
-final user = await apiClient.get('/users/123');
-
-// GET with query parameters
-final users = await apiClient.get(
-  '/users',
-  queryParameters: {'page': 1, 'limit': 20},
-);
-
-// GET with custom headers
-final data = await apiClient.get(
-  '/protected-resource',
-  headers: {'X-Custom-Header': 'value'},
-);
-```
-
----
-
-#### post()
-```dart
-Future<Map<String, dynamic>> post(
-  String endpoint, {
-  dynamic data,
-  Map<String, dynamic>? queryParameters,
-  Map<String, String>? headers,
-})
-```
-Performs a POST request to create data.
-
-**Parameters:**
-- `endpoint` - API endpoint
-- `data` - Request body (Map, List, or JSON string)
-- `queryParameters` - Optional query parameters
-- `headers` - Optional headers
-
-**Returns:** Response data as Map
-
-**Example:**
-```dart
-// Create user
-final newUser = await apiClient.post(
-  '/users',
-  data: {
-    'name': 'John Doe',
-    'email': 'john@example.com',
-  },
-);
-
-// Login
-final response = await apiClient.post(
-  '/auth/login',
-  data: {
-    'email': 'user@example.com',
-    'password': 'password123',
-  },
-);
-```
-
----
-
-#### put()
-```dart
-Future<Map<String, dynamic>> put(
-  String endpoint, {
-  dynamic data,
-  Map<String, dynamic>? queryParameters,
-  Map<String, String>? headers,
-})
-```
-Performs a PUT request to replace data.
-
-**Parameters:**
-- `endpoint` - API endpoint
-- `data` - Complete replacement data
-- `queryParameters` - Optional query parameters
-- `headers` - Optional headers
-
-**Returns:** Response data as Map
-
-**Example:**
-```dart
-// Update entire user object
-final updatedUser = await apiClient.put(
-  '/users/123',
-  data: {
-    'id': 123,
-    'name': 'John Updated',
-    'email': 'john.updated@example.com',
-    'age': 30,
-  },
-);
-```
-
----
-
-#### patch()
-```dart
-Future<Map<String, dynamic>> patch(
-  String endpoint, {
-  dynamic data,
-  Map<String, dynamic>? queryParameters,
-  Map<String, String>? headers,
-})
-```
-Performs a PATCH request to partially update data.
-
-**Parameters:**
-- `endpoint` - API endpoint
-- `data` - Partial update data
-- `queryParameters` - Optional query parameters
-- `headers` - Optional headers
-
-**Returns:** Response data as Map
-
-**Example:**
-```dart
-// Update only specific fields
-final updated = await apiClient.patch(
-  '/users/123',
-  data: {'name': 'New Name'}, // Only update name
-);
-```
-
----
-
-#### delete()
-```dart
-Future<Map<String, dynamic>> delete(
-  String endpoint, {
-  Map<String, dynamic>? queryParameters,
-  Map<String, String>? headers,
-})
-```
-Performs a DELETE request to remove data.
-
-**Parameters:**
-- `endpoint` - API endpoint
-- `queryParameters` - Optional query parameters
-- `headers` - Optional headers
-
-**Returns:** Response data as Map
-
-**Example:**
-```dart
-// Delete user
-await apiClient.delete('/users/123');
-
-// Delete with confirmation token
-await apiClient.delete(
-  '/users/123',
-  queryParameters: {'confirmation': 'token'},
-);
-```
-
----
-
-### Configuration Methods
-
-#### setBaseUrl()
-```dart
-void setBaseUrl(String baseUrl)
-```
-Sets the base URL for all API requests.
-
-**Example:**
-```dart
-apiClient.setBaseUrl('https://api.example.com/v1');
-
-// Now requests use this base:
-await apiClient.get('/users'); // -> https://api.example.com/v1/users
-```
-
----
-
-#### setAuthToken()
-```dart
-void setAuthToken(String? token)
-```
-Sets the authentication token for requests. Pass `null` to clear.
-
-**Example:**
-```dart
-// Set token after login
-final token = await authService.getAuthToken();
-apiClient.setAuthToken(token);
-
-// Clear token on logout
-apiClient.setAuthToken(null);
-```
-
----
-
-#### setDefaultHeaders()
-```dart
-void setDefaultHeaders(Map<String, String> headers)
-```
-Sets headers that will be included in all requests.
-
-**Example:**
-```dart
-apiClient.setDefaultHeaders({
-  'Content-Type': 'application/json',
-  'Accept': 'application/json',
-  'X-App-Version': '1.0.0',
-});
-```
-
----
-
-## Usage Examples
-
-### Example 1: Basic CRUD Operations
+The **Request Manager** serves as the single execution gateway for all network requests. No request can bypass this component.
 
 ```dart
-class UserRepository {
-  final ApiClient _apiClient;
+abstract class RequestManager extends ServiceInterface {
+  Future<NetworkResponse<TResponse>> execute<TRequest, TResponse>(
+    NetworkApi<TRequest, TResponse> api,
+  );
   
-  UserRepository(this._apiClient);
+  void enable();
+  void disable();
+  bool get isEnabled;
   
-  // Create
-  Future<User> createUser(User user) async {
-    final response = await _apiClient.post(
-      '/users',
-      data: user.toJson(),
-    );
-    return User.fromJson(response);
-  }
+  Future<void> processQueue();
+  Future<int> getPendingCount();
+  Future<void> clearQueue();
   
-  // Read
-  Future<User> getUser(int id) async {
-    final response = await _apiClient.get('/users/$id');
-    return User.fromJson(response);
-  }
-  
-  // Update
-  Future<User> updateUser(User user) async {
-    final response = await _apiClient.put(
-      '/users/${user.id}',
-      data: user.toJson(),
-    );
-    return User.fromJson(response);
-  }
-  
-  // Delete
-  Future<void> deleteUser(int id) async {
-    await _apiClient.delete('/users/$id');
-  }
-  
-  // List with pagination
-  Future<List<User>> getUsers({int page = 1, int limit = 20}) async {
-    final response = await _apiClient.get(
-      '/users',
-      queryParameters: {'page': page, 'limit': limit},
-    );
-    
-    final List<dynamic> data = response['data'];
-    return data.map((json) => User.fromJson(json)).toList();
-  }
+  Stream<int> get queueCountStream;
 }
 ```
 
-### Example 2: Authentication Integration
+**Key Features:**
+- **Single Gateway** - All requests must go through this manager
+- **Enable/Disable Control** - Runtime control over request execution
+- **Queue Management** - Priority-based offline request queuing
+- **Real-Time Monitoring** - Stream-based queue count updates
+- **Connectivity Integration** - Automatic processing when back online
+
+### Network API Interface
+
+All APIs must extend the `NetworkApi<TRequest, TResponse>` abstract class:
 
 ```dart
-class ApiService {
-  final ApiClient _apiClient;
-  final AuthService _authService;
+abstract class NetworkApi<TRequest, TResponse> {
+  String get apiTypeIdentifier;        // Unique identifier
+  HttpMethod get method;               // HTTP method
+  ApiUrl get urlObject;                // URL configuration
+  TRequest? get bodyModel;             // Request body model
+  bool get needAuth;                   // Authentication required
+  bool get queueFlag;                  // Queue when offline
+  int get priority;                    // Execution priority
+  bool get cacheFlag;                  // Cache metadata
   
-  ApiService(this._apiClient, this._authService) {
-    _setupAuth();
-  }
-  
-  void _setupAuth() {
-    // Set auth token after initialization
-    _authService.getAuthToken().then((token) {
-      if (token != null) {
-        _apiClient.setAuthToken(token);
-      }
-    });
-  }
-  
-  Future<void> login(String email, String password) async {
-    // Login via auth service
-    await _authService.signIn(email, password);
-    
-    // Get token and set it
-    final token = await _authService.getAuthToken();
-    _apiClient.setAuthToken(token);
-  }
-  
-  Future<void> logout() async {
-    // Clear token
-    _apiClient.setAuthToken(null);
-    
-    // Sign out
-    await _authService.signOut();
-  }
+  Map<String, dynamic>? toRequestBody();
+  TResponse parseResponse(Map<String, dynamic> responseData);
+  Map<String, String> getHeaders() => {};
 }
 ```
 
-### Example 3: Error Handling
+### Authentication Provider
+
+Optional authentication abstraction for handling tokens:
 
 ```dart
-class SafeApiClient {
-  final ApiClient _apiClient;
-  
-  SafeApiClient(this._apiClient);
-  
-  Future<Map<String, dynamic>?> safeGet(String endpoint) async {
-    try {
-      return await _apiClient.get(endpoint);
-    } on NetworkException catch (e) {
-      print('Network error: ${e.message}');
-      showOfflineDialog();
-      return null;
-    } on AuthException catch (e) {
-      print('Auth error: ${e.message}');
-      navigateToLogin();
-      return null;
-    } on ApiException catch (e) {
-      print('API error: ${e.statusCode} - ${e.message}');
-      showErrorDialog(e.message);
-      return null;
-    } catch (e) {
-      print('Unknown error: $e');
-      showGenericErrorDialog();
-      return null;
-    }
-  }
+abstract class AuthTokenProvider {
+  Future<String?> getAccessToken();
+  Future<String?> refreshToken();
+  Future<void> onAuthFailure();
 }
 ```
 
-### Example 4: Retry Logic
+### Status Code Strategies
+
+Support for different backend response patterns:
 
 ```dart
-class RetryableApiClient {
-  final ApiClient _apiClient;
-  final int maxRetries;
-  
-  RetryableApiClient(this._apiClient, {this.maxRetries = 3});
-  
-  Future<Map<String, dynamic>> getWithRetry(
-    String endpoint, {
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    int attempts = 0;
-    
-    while (attempts < maxRetries) {
-      try {
-        return await _apiClient.get(
-          endpoint,
-          queryParameters: queryParameters,
-        );
-      } catch (e) {
-        attempts++;
-        
-        if (attempts >= maxRetries) {
-          rethrow;
-        }
-        
-        // Wait before retry (exponential backoff)
-        await Future.delayed(Duration(seconds: attempts * 2));
-      }
-    }
-    
-    throw Exception('Max retries exceeded');
-  }
+abstract class StatusCodeStrategy {
+  bool isSuccess(int? httpStatus, Map<String, dynamic>? responseBody);
+  String? getInternalStatus(Map<String, dynamic>? responseBody);
+  String? getErrorMessage(int? httpStatus, Map<String, dynamic>? responseBody);
 }
 ```
 
-### Example 5: Request Interceptor
-
-```dart
-class LoggingApiClient {
-  final ApiClient _apiClient;
-  final LoggerService _logger;
-  
-  LoggingApiClient(this._apiClient, this._logger);
-  
-  Future<Map<String, dynamic>> get(
-    String endpoint, {
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    final start = DateTime.now();
-    _logger.info('GET $endpoint');
-    
-    try {
-      final response = await _apiClient.get(
-        endpoint,
-        queryParameters: queryParameters,
-      );
-      
-      final duration = DateTime.now().difference(start);
-      _logger.info('GET $endpoint completed in ${duration.inMilliseconds}ms');
-      
-      return response;
-    } catch (e) {
-      _logger.error('GET $endpoint failed: $e');
-      rethrow;
-    }
-  }
-}
-```
-
-### Example 6: File Upload
-
-```dart
-class FileUploadService {
-  final ApiClient _apiClient;
-  
-  FileUploadService(this._apiClient);
-  
-  Future<String> uploadFile(File file) async {
-    // Convert file to base64
-    final bytes = await file.readAsBytes();
-    final base64File = base64Encode(bytes);
-    
-    // Upload
-    final response = await _apiClient.post(
-      '/upload',
-      data: {
-        'file': base64File,
-        'filename': file.path.split('/').last,
-        'mimeType': 'image/jpeg',
-      },
-    );
-    
-    return response['url'];
-  }
-}
-```
+**Available Strategies:**
+- **HttpStatusCodeStrategy** - HTTP status is authoritative (RESTful APIs)
+- **InternalStatusCodeStrategy** - HTTP 200 + internal status field
 
 ---
 
-## Setup
+## Getting Started
 
-### 1. Installation
-
-```yaml
-# pubspec.yaml
-dependencies:
-  abdalsalam_logic_flutter: ^1.0.0
-  dio: ^5.4.0  # or http: ^1.1.0
-```
-
-### 2. Configuration
+### 1. Basic Setup
 
 ```dart
-import 'package:get_it/get_it.dart';
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 
-void setupServices() {
-  final getIt = GetIt.instance;
+// Initialize components
+final registry = NetworkRegistryImpl();
+final appStateManager = AppStateManagerImpl.create();
+final requestManager = RequestManagerImpl(
+  registry: registry,
+  appStateManager: appStateManager,
+);
+
+// Initialize services
+await registry.initialize();
+await appStateManager.initialize();
+await requestManager.initialize();
+```
+
+### 2. With Authentication
+
+```dart
+// Create auth provider
+final authProvider = MyAuthProvider();
+
+final requestManager = RequestManagerImpl(
+  registry: registry,
+  appStateManager: appStateManager,
+  authTokenProvider: authProvider,
+  statusCodeStrategy: InternalStatusCodeStrategy(),
+);
+```
+
+### 3. Register APIs
+
+```dart
+// Register your APIs before use
+registry.register(GetUserApi(1));
+registry.register(CreateUserApi(CreateUserRequest(
+  name: 'John Doe',
+  email: 'john@example.com',
+)));
+```
+
+---
+
+## API Definition
+
+### Define Data Models
+
+```dart
+class User {
+  final int id;
+  final String name;
+  final String email;
+
+  User({required this.id, required this.name, required this.email});
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      email: json['email'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'email': email,
+  };
+}
+
+class CreateUserRequest {
+  final String name;
+  final String email;
+
+  CreateUserRequest({required this.name, required this.email});
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'email': email,
+  };
+}
+```
+
+### Create API Classes
+
+#### GET Request Example
+
+```dart
+class GetUserApi extends NetworkApi<void, User> {
+  final int userId;
+
+  GetUserApi(this.userId);
+
+  @override
+  String get apiTypeIdentifier => 'get_user';
+
+  @override
+  HttpMethod get method => HttpMethod.get;
+
+  @override
+  ApiUrl get urlObject => ApiUrl(
+    baseUrl: 'https://api.example.com',
+    path: '/users/{userId}',
+    pathVariables: {'userId': userId.toString()},
+  );
+
+  @override
+  void get bodyModel => null;
+
+  @override
+  bool get needAuth => false;
+
+  @override
+  bool get queueFlag => true;      // Queue when offline
+
+  @override
+  int get priority => 0;           // Normal priority
+
+  @override
+  bool get cacheFlag => true;      // Enable caching
+
+  @override
+  Map<String, dynamic>? toRequestBody() => null;
+
+  @override
+  User parseResponse(Map<String, dynamic> responseData) {
+    return User.fromJson(responseData['data'] ?? responseData);
+  }
+}
+```
+
+#### POST Request Example
+
+```dart
+class CreateUserApi extends NetworkApi<CreateUserRequest, User> {
+  final CreateUserRequest request;
+
+  CreateUserApi(this.request);
+
+  @override
+  String get apiTypeIdentifier => 'create_user';
+
+  @override
+  HttpMethod get method => HttpMethod.post;
+
+  @override
+  ApiUrl get urlObject => const ApiUrl(
+    baseUrl: 'https://api.example.com',
+    path: '/users',
+  );
+
+  @override
+  CreateUserRequest get bodyModel => request;
+
+  @override
+  bool get needAuth => true;       // Requires authentication
+
+  @override
+  bool get queueFlag => true;      // Queue when offline
+
+  @override
+  int get priority => 1;           // Higher priority
+
+  @override
+  bool get cacheFlag => false;     // Don't cache POST responses
+
+  @override
+  Map<String, dynamic> toRequestBody() => request.toJson();
+
+  @override
+  User parseResponse(Map<String, dynamic> responseData) {
+    return User.fromJson(responseData['data'] ?? responseData);
+  }
+
+  @override
+  Map<String, String> getHeaders() => {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+}
+```
+
+### URL Configuration
+
+The `ApiUrl` class supports dynamic URLs:
+
+```dart
+// Static URL
+ApiUrl(
+  baseUrl: 'https://api.example.com',
+  path: '/users',
+)
+
+// Path variables
+ApiUrl(
+  baseUrl: 'https://api.example.com',
+  path: '/users/{userId}/posts/{postId}',
+  pathVariables: {
+    'userId': '123',
+    'postId': '456',
+  },
+)
+
+// Query parameters
+ApiUrl(
+  baseUrl: 'https://api.example.com',
+  path: '/users',
+  queryParameters: {
+    'page': 1,
+    'limit': 20,
+    'sort': 'name',
+  },
+)
+
+// Runtime base URL changes
+final api = GetUserApi(123);
+final newUrl = api.urlObject.copyWith(
+  baseUrl: 'https://staging-api.example.com',
+);
+```
+
+---
+
+## Request Execution
+
+### Basic Execution
+
+```dart
+try {
+  final getUserApi = GetUserApi(123);
+  final response = await requestManager.execute(getUserApi);
   
-  // Register API client
-  getIt.registerLazySingleton<ApiClient>(
-    () {
-      final client = ApiClientImpl(
-        logger: getIt<LoggerService>(),
-      );
-      
-      // Configure
-      client.setBaseUrl('https://api.example.com/v1');
-      client.setDefaultHeaders({
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+  if (response.isSuccess) {
+    final user = response.parsedModel!;
+    print('User: ${user.name}');
+    
+    // Access additional response data
+    print('HTTP Status: ${response.httpStatus}');
+    print('Internal Status: ${response.internalStatus}');
+    print('Raw Response: ${response.rawResponse}');
+  } else {
+    print('Error: ${response.error}');
+  }
+} catch (e) {
+  // Handle exceptions
+  print('Exception: $e');
+}
+```
+
+### Response Object
+
+The `NetworkResponse<T>` provides comprehensive response information:
+
+```dart
+class NetworkResponse<T> {
+  final int? httpStatus;              // HTTP status code
+  final String? internalStatus;       // Internal status (if using internal strategy)
+  final T? parsedModel;               // Parsed response model
+  final Map<String, dynamic>? rawResponse;  // Raw response data
+  final String? error;                // Error message (if failed)
+  final bool isSuccess;               // Success flag
+}
+```
+
+### Error Handling
+
+```dart
+try {
+  final response = await requestManager.execute(api);
+  // Handle response...
+} on NetworkManagerDisabledException catch (e) {
+  // Request manager is disabled
+  print('Manager disabled: ${e.message}');
+} on NetworkUnregisteredApiException catch (e) {
+  // API not registered
+  print('Unregistered API: ${e.message}');
+} on NetworkAuthFailedException catch (e) {
+  // Authentication failed
+  print('Auth failed: ${e.message}');
+} on NetworkTimeoutException catch (e) {
+  // Request timeout
+  print('Timeout: ${e.message}');
+} on NetworkOfflineException catch (e) {
+  // Device offline
+  print('Offline: ${e.message}');
+} on NetworkBackendException catch (e) {
+  // Server error
+  print('Server error: ${e.message}');
+} catch (e) {
+  // Unexpected error
+  print('Unexpected: $e');
+}
+```
+
+---
+
+## Offline & Queue Management
+
+### Automatic Queuing
+
+When the device goes offline, requests with `queueFlag = true` are automatically queued:
+
+```dart
+class ImportantApi extends NetworkApi<void, Data> {
+  @override
+  bool get queueFlag => true;  // Queue when offline
+  
+  @override
+  int get priority => 5;       // High priority
+  
+  // ... other implementation
+}
+```
+
+### Queue Monitoring
+
+```dart
+// Listen to queue count changes
+requestManager.queueCountStream.listen((count) {
+  print('Pending requests: $count');
+  // Update UI badge or indicator
+});
+
+// Get current queue count
+final count = await requestManager.getPendingCount();
+print('Current queue: $count');
+```
+
+### Manual Queue Management
+
+```dart
+// Process queue manually (usually automatic)
+await requestManager.processQueue();
+
+// Clear all pending requests
+await requestManager.clearQueue();
+
+// Temporarily disable request processing
+requestManager.disable();
+
+// Re-enable request processing
+requestManager.enable();
+```
+
+### Priority System
+
+```dart
+// Higher numbers = higher priority
+class CriticalApi extends NetworkApi<void, Data> {
+  @override
+  int get priority => 10;      // Highest priority
+}
+
+class NormalApi extends NetworkApi<void, Data> {
+  @override
+  int get priority => 0;       // Normal priority
+}
+
+class LowPriorityApi extends NetworkApi<void, Data> {
+  @override
+  int get priority => -5;      // Low priority
+}
+```
+
+**Queue Processing Order:**
+1. Higher priority first (10 → 5 → 1 → 0 → -1 → -5)
+2. Same priority → FIFO (first in, first out)
+3. Retry failed requests with exponential backoff
+
+---
+
+## Authentication Handling
+
+### Implement Auth Provider
+
+```dart
+class MyAuthProvider implements AuthTokenProvider {
+  String? _accessToken;
+  String? _refreshToken;
+
+  @override
+  Future<String?> getAccessToken() async {
+    return _accessToken;
+  }
+
+  @override
+  Future<String?> refreshToken() async {
+    if (_refreshToken == null) return null;
+    
+    try {
+      // Make API call to refresh token
+      final response = await dio.post('/auth/refresh', data: {
+        'refresh_token': _refreshToken,
       });
       
-      return client;
-    },
-  );
+      _accessToken = response.data['access_token'];
+      return _accessToken;
+    } catch (e) {
+      return null; // Refresh failed
+    }
+  }
+
+  @override
+  Future<void> onAuthFailure() async {
+    // Clear tokens
+    _accessToken = null;
+    _refreshToken = null;
+    
+    // Navigate to login screen
+    Navigator.pushReplacementNamed(context, '/login');
+    
+    // Or show login dialog
+    // showLoginDialog();
+  }
 }
 ```
 
-### 3. Initialize
+### Auth-Required APIs
 
 ```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+class ProfileApi extends NetworkApi<void, Profile> {
+  @override
+  bool get needAuth => true;   // Requires authentication
   
-  // Setup services
-  setupServices();
+  @override
+  bool get queueFlag => true;  // Queue for retry after auth refresh
   
-  // Initialize API client
-  final apiClient = GetIt.I<ApiClient>();
-  await apiClient.initialize();
-  
-  runApp(MyApp());
+  // ... other implementation
 }
 ```
+
+### Auth Flow
+
+1. Request with `needAuth = true` is executed
+2. Access token is automatically attached via `Authorization: Bearer <token>`
+3. If server returns 401 (Unauthorized):
+   - `refreshToken()` is called automatically
+   - If refresh succeeds → request is retried with new token
+   - If refresh fails → `onAuthFailure()` is called
 
 ---
 
-## Best Practices
+## Error Handling
 
-### 1. Use Environment-Specific URLs
+### Exception Hierarchy
 
-✅ **DO**: Switch base URL based on environment
 ```dart
-final baseUrl = kReleaseMode
-  ? 'https://api.production.com'
-  : 'https://api.staging.com';
+// Base network exception
+NetworkException
 
-apiClient.setBaseUrl(baseUrl);
+// Specific exceptions
+├── NetworkTimeoutException        // Connection timeout
+├── NetworkOfflineException        // Device offline/connection error  
+├── NetworkManagerDisabledException // Request manager disabled
+├── NetworkBackendException        // Server error (4xx, 5xx)
+├── NetworkAuthFailedException     // Authentication failure
+├── NetworkValidationException     // API validation error
+└── NetworkUnregisteredApiException // API not registered
 ```
 
-### 2. Handle Token Refresh
+### Comprehensive Error Handling
 
-✅ **DO**: Refresh expired tokens
 ```dart
-Future<Map<String, dynamic>> get(String endpoint) async {
+Future<User?> fetchUser(int userId) async {
   try {
-    return await _apiClient.get(endpoint);
-  } on UnauthorizedException {
-    await _authService.refreshToken();
-    final newToken = await _authService.getAuthToken();
-    _apiClient.setAuthToken(newToken);
-    return await _apiClient.get(endpoint); // Retry
+    final api = GetUserApi(userId);
+    final response = await requestManager.execute(api);
+    
+    if (response.isSuccess) {
+      return response.parsedModel;
+    } else {
+      // Handle business logic errors
+      logger.warning('User fetch failed: ${response.error}');
+      showSnackBar('Failed to load user: ${response.error}');
+      return null;
+    }
+    
+  } on NetworkTimeoutException catch (e) {
+    logger.error('Timeout fetching user: ${e.message}');
+    showSnackBar('Request timed out. Please try again.');
+    return null;
+    
+  } on NetworkOfflineException catch (e) {
+    logger.info('Offline, request queued: ${e.message}');
+    showSnackBar('You are offline. Request will be sent when connected.');
+    return null;
+    
+  } on NetworkAuthFailedException catch (e) {
+    logger.error('Auth failed: ${e.message}');
+    // onAuthFailure() already called automatically
+    return null;
+    
+  } on NetworkUnregisteredApiException catch (e) {
+    logger.error('API not registered: ${e.message}');
+    // This should not happen in production
+    return null;
+    
+  } catch (e, stackTrace) {
+    logger.error('Unexpected error: $e', stackTrace);
+    showSnackBar('An unexpected error occurred');
+    return null;
   }
 }
 ```
 
-### 3. Use Type-Safe Models
-
-✅ **DO**: Convert responses to models
-```dart
-Future<User> getUser(int id) async {
-  final response = await apiClient.get('/users/$id');
-  return User.fromJson(response);
-}
-```
-
-❌ **DON'T**: Use raw maps everywhere
-```dart
-final user = await apiClient.get('/users/$id');
-print(user['name']); // Error-prone!
-```
-
-### 4. Validate Responses
-
-✅ **DO**: Check response structure
-```dart
-Future<List<User>> getUsers() async {
-  final response = await apiClient.get('/users');
-  
-  if (response['data'] is List) {
-    return (response['data'] as List)
-      .map((json) => User.fromJson(json))
-      .toList();
-  }
-  
-  throw FormatException('Invalid response format');
-}
-```
-
-### 5. Set Timeouts
-
-✅ **DO**: Configure request timeouts
-```dart
-final dio = Dio()
-  ..options.connectTimeout = Duration(seconds: 10)
-  ..options.receiveTimeout = Duration(seconds: 10);
-```
-
 ---
 
-## Error Types
+## Configuration Options
 
-| Error | Status Code | Cause |
-|-------|-------------|-------|
-| `NetworkException` | N/A | No internet connection |
-| `TimeoutException` | N/A | Request took too long |
-| `BadRequestException` | 400 | Invalid request data |
-| `UnauthorizedException` | 401 | Invalid/expired token |
-| `ForbiddenException` | 403 | Insufficient permissions |
-| `NotFoundException` | 404 | Resource not found |
-| `ServerException` | 500+ | Server error |
+### Status Code Strategies
 
----
+#### HTTP Status Strategy (RESTful APIs)
 
-## Response Format
+```dart
+final requestManager = RequestManagerImpl(
+  registry: registry,
+  appStateManager: appStateManager,
+  statusCodeStrategy: HttpStatusCodeStrategy(), // Default
+);
+```
 
-### Success Response
+**Behavior:**
+- 200-299 = Success
+- 400+ = Error
+- Error messages extracted from response body
 
+#### Internal Status Strategy (Custom APIs)
+
+```dart
+final requestManager = RequestManagerImpl(
+  registry: registry,
+  appStateManager: appStateManager,
+  statusCodeStrategy: InternalStatusCodeStrategy(
+    statusField: 'status',                    // Field containing status
+    messageField: 'message',                  // Field containing error message
+    successStatuses: ['success', 'ok'],       // Values indicating success
+  ),
+);
+```
+
+**Example Response:**
 ```json
 {
   "status": "success",
+  "message": "User created successfully",
   "data": {
     "id": 123,
     "name": "John Doe"
@@ -680,40 +744,371 @@ final dio = Dio()
 }
 ```
 
-### Error Response
+### Custom Storage
 
-```json
-{
-  "status": "error",
-  "message": "User not found",
-  "code": "USER_NOT_FOUND"
-}
+```dart
+final customStorage = MyPendingRequestStorage();
+
+final requestManager = RequestManagerImpl(
+  registry: registry,
+  appStateManager: appStateManager,
+  pendingRequestStorage: customStorage,
+);
 ```
 
-### Paginated Response
+### Dio Configuration
 
-```json
-{
-  "status": "success",
-  "data": [...],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 100
+The Request Manager uses Dio internally. You can access configuration via inheritance:
+
+```dart
+class CustomRequestManager extends RequestManagerImpl {
+  CustomRequestManager({...}) : super(...);
+  
+  @override
+  void _initializeDio() {
+    super._initializeDio();
+    
+    // Customize Dio settings
+    _dio.options.connectTimeout = const Duration(seconds: 60);
+    _dio.options.receiveTimeout = const Duration(seconds: 60);
+    
+    // Add interceptors
+    _dio.interceptors.add(LogInterceptor());
   }
 }
 ```
 
 ---
 
-## Summary
+## Best Practices
 
-The API Client provides:
+### 1. API Design
 
-✅ **RESTful operations** - GET, POST, PUT, PATCH, DELETE  
-✅ **Authentication** - Automatic token injection  
-✅ **Configuration** - Base URL and headers  
-✅ **Error handling** - Structured exceptions  
-✅ **Type-safe** - Strong typing throughout  
+```dart
+// ✅ Good: Descriptive identifier
+class GetUserProfileApi extends NetworkApi<void, UserProfile> {
+  @override
+  String get apiTypeIdentifier => 'get_user_profile';
+}
 
-Use it to build robust, maintainable API integrations in your Flutter app.
+// ❌ Bad: Generic identifier
+class UserApi extends NetworkApi<void, User> {
+  @override
+  String get apiTypeIdentifier => 'user';
+}
+```
+
+### 2. Priority Assignment
+
+```dart
+// ✅ Good: Logical priorities
+class LoginApi extends NetworkApi<LoginRequest, LoginResponse> {
+  @override
+  int get priority => 10;         // Highest - user action
+  @override
+  bool get queueFlag => false;    // Don't queue login
+}
+
+class GetMessagesApi extends NetworkApi<void, List<Message>> {
+  @override
+  int get priority => 5;          // High - core content
+  @override
+  bool get queueFlag => true;     // Queue for offline sync
+}
+
+class GetAnalyticsApi extends NetworkApi<void, Analytics> {
+  @override
+  int get priority => -5;         // Low - non-critical
+  @override
+  bool get queueFlag => false;    // Don't queue analytics
+}
+```
+
+### 3. Error Messages
+
+```dart
+// ✅ Good: User-friendly error handling
+try {
+  final response = await requestManager.execute(api);
+  // ...
+} on NetworkTimeoutException catch (e) {
+  showUserMessage('Connection timed out. Please check your internet connection.');
+} on NetworkAuthFailedException catch (e) {
+  showUserMessage('Session expired. Please log in again.');
+}
+
+// ❌ Bad: Technical error exposure
+catch (e) {
+  showUserMessage(e.toString()); // Shows technical details
+}
+```
+
+### 4. Queue Management
+
+```dart
+// ✅ Good: Monitor queue for user feedback
+void setupQueueMonitoring() {
+  requestManager.queueCountStream.listen((count) {
+    if (count > 0) {
+      showOfflineBanner('$count requests pending sync');
+    } else {
+      hideOfflineBanner();
+    }
+  });
+}
+
+// ✅ Good: Clear queue on logout
+Future<void> logout() async {
+  await requestManager.clearQueue();  // Clear user-specific requests
+  await authProvider.clearTokens();
+  navigateToLogin();
+}
+```
+
+### 5. API Registration
+
+```dart
+// ✅ Good: Register once, reuse instances
+class ApiRegistry {
+  static final getUserApi = GetUserApi(0);     // Template instance
+  static final createUserApi = CreateUserApi(CreateUserRequest(name: '', email: ''));
+  
+  static void registerAll(NetworkRegistry registry) {
+    registry.register(getUserApi);
+    registry.register(createUserApi);
+    // ... register all APIs
+  }
+}
+
+// Usage: Create new instances for different parameters
+final specificUserApi = GetUserApi(userId);
+```
+
+### 6. Testing
+
+```dart
+// ✅ Good: Mock for testing
+class MockRequestManager implements RequestManager {
+  @override
+  Future<NetworkResponse<T>> execute<T, R>(NetworkApi<T, R> api) async {
+    // Return mock responses based on API type
+    if (api.apiTypeIdentifier == 'get_user') {
+      return NetworkResponse.success(data: mockUser);
+    }
+    return NetworkResponse.failure(error: 'Mock error');
+  }
+  
+  // ... implement other methods
+}
+```
+
+---
+
+## Examples
+
+### Complete Setup Example
+
+```dart
+class NetworkingService {
+  late final NetworkRegistry _registry;
+  late final RequestManager _requestManager;
+  late final AppStateManager _appStateManager;
+  late final MyAuthProvider _authProvider;
+  
+  StreamSubscription<int>? _queueSubscription;
+  StreamSubscription<AppStateInfo>? _connectivitySubscription;
+
+  Future<void> initialize() async {
+    // 1. Create components
+    _registry = NetworkRegistryImpl();
+    _appStateManager = AppStateManagerImpl.create();
+    _authProvider = MyAuthProvider();
+    
+    // 2. Create request manager
+    _requestManager = RequestManagerImpl(
+      registry: _registry,
+      appStateManager: _appStateManager,
+      authTokenProvider: _authProvider,
+      statusCodeStrategy: InternalStatusCodeStrategy(),
+    );
+
+    // 3. Initialize services
+    await _registry.initialize();
+    await _appStateManager.initialize();
+    await _requestManager.initialize();
+
+    // 4. Register APIs
+    _registerAPIs();
+
+    // 5. Setup monitoring
+    _setupMonitoring();
+  }
+
+  void _registerAPIs() {
+    _registry.register(LoginApi(LoginRequest(email: '', password: '')));
+    _registry.register(GetUserApi(0));
+    _registry.register(CreateUserApi(CreateUserRequest(name: '', email: '')));
+    _registry.register(UpdateUserApi(0, UpdateUserRequest()));
+    _registry.register(DeleteUserApi(0));
+    // ... register all your APIs
+  }
+
+  void _setupMonitoring() {
+    // Monitor queue changes
+    _queueSubscription = _requestManager.queueCountStream.listen((count) {
+      if (count > 0) {
+        NotificationService.showSyncPending(count);
+      } else {
+        NotificationService.hideSyncPending();
+      }
+    });
+
+    // Monitor connectivity
+    _connectivitySubscription = _appStateManager.stateStream.listen((state) {
+      if (state.isOnline) {
+        NotificationService.showOnline();
+      } else {
+        NotificationService.showOffline();
+      }
+    });
+  }
+
+  // High-level API methods
+  Future<User?> getUser(int userId) async {
+    try {
+      final api = GetUserApi(userId);
+      final response = await _requestManager.execute(api);
+      return response.isSuccess ? response.parsedModel : null;
+    } on NetworkException catch (e) {
+      _handleNetworkError(e);
+      return null;
+    }
+  }
+
+  Future<User?> createUser(String name, String email) async {
+    try {
+      final api = CreateUserApi(CreateUserRequest(name: name, email: email));
+      final response = await _requestManager.execute(api);
+      return response.isSuccess ? response.parsedModel : null;
+    } on NetworkException catch (e) {
+      _handleNetworkError(e);
+      return null;
+    }
+  }
+
+  void _handleNetworkError(NetworkException error) {
+    switch (error.runtimeType) {
+      case NetworkTimeoutException:
+        SnackBarService.show('Connection timeout. Please try again.');
+        break;
+      case NetworkOfflineException:
+        SnackBarService.show('You are offline. Request will sync when connected.');
+        break;
+      case NetworkAuthFailedException:
+        // Auth provider already handled this
+        break;
+      default:
+        SnackBarService.show('Network error: ${error.message}');
+    }
+  }
+
+  Future<void> dispose() async {
+    await _queueSubscription?.cancel();
+    await _connectivitySubscription?.cancel();
+    await _requestManager.dispose();
+    await _appStateManager.dispose();
+    await _registry.dispose();
+  }
+}
+```
+
+### Usage in Widget
+
+```dart
+class UserProfileScreen extends StatefulWidget {
+  @override
+  _UserProfileScreenState createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends State<UserProfileScreen> {
+  final NetworkingService _networkingService = GetIt.instance();
+  User? _user;
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final user = await _networkingService.getUser(widget.userId);
+      setState(() {
+        _user = user;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load user profile';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_error!, style: TextStyle(color: Colors.red)),
+            ElevatedButton(
+              onPressed: _loadUser,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_user == null) {
+      return const Center(child: Text('User not found'));
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Text('Name: ${_user!.name}'),
+          Text('Email: ${_user!.email}'),
+          // ... other user details
+        ],
+      ),
+    );
+  }
+}
+```
+
+---
+
+## Additional Resources
+
+- **Examples**: See `lib/examples/networking_*.dart` for complete examples
+- **Demo**: Run the example app and try "🌐 Networking Demo"
+- **Source Code**: Check `lib/src/networking/` for implementation details
+- **Issues**: Report issues on GitHub with networking logs
+
+---
+
+**For more detailed examples and interactive demos, see the examples folder and run the demo application.**
