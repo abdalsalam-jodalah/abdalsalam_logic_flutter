@@ -3,6 +3,7 @@ import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 import 'package:abdalsalam_logic_flutter/examples/app_state_detection_example.dart';
 import 'package:abdalsalam_logic_flutter/examples/runtime_control_comprehensive_ui.dart';
 import 'package:abdalsalam_logic_flutter/examples/runtime_control_interactive_demo.dart';
+import 'package:abdalsalam_logic_flutter/examples/networking_demo_integration.dart';
 import 'package:abdalsalam_logic_flutter/examples/domain_registration_example.dart' as domain_reg;
 import 'storage_designer.dart';
 import 'storage_inspector.dart';
@@ -107,6 +108,15 @@ class HomeMenu extends StatelessWidget {
                 ));
               },
               child: const Text('🔌 Runtime Control'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const NetworkingDemoWidget(),
+                ));
+              },
+              child: const Text('🌐 Networking Demo'),
             ),
             const SizedBox(height: 12),
             FilledButton(

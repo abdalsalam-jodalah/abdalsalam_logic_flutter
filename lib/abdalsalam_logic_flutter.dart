@@ -64,6 +64,8 @@ export 'src/networking/models/network_response.dart';
 export 'src/networking/models/pending_request.dart';
 export 'src/networking/exceptions/networking_exceptions.dart';
 
+// Networking examples
+
 export 'src/storage/storage_service.dart';
 export 'src/storage/shared_preferences_storage.dart';
 export 'src/storage/sqlite_storage.dart';
