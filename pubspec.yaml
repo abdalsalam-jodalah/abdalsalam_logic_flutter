@@ -51,6 +51,14 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # Plugin configuration
+  plugin:
+    platforms:
+      android:
+        package: com.abdalsalam.logic.flutter
+        pluginClass: AbdalsalamLogicFlutterPlugin
+      ios:
+        pluginClass: AbdalsalamLogicFlutterPlugin
 
   # To add assets to your package, add an assets section, like this:
   # assets:

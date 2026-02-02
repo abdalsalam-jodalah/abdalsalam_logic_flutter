@@ -107,3 +107,7 @@ export 'src/runtime_control/domain_registry.dart';
 export 'src/runtime_control/state_controller.dart';
 export 'src/runtime_control/ui_tree_controller.dart';
 export 'src/runtime_control/runtime_controlled_app.dart';
+export 'src/runtime_control/platform/app_restart.dart';
+
+// Examples
+export 'examples/plugin_test_widget.dart';

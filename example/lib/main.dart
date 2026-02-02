@@ -102,6 +102,15 @@ class HomeMenu extends StatelessWidget {
             FilledButton(
               onPressed: () {
                 Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const PluginTestWidget(),
+                ));
+              },
+              child: const Text('🔌 Plugin Test'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const StorageDesignerPage(),
                 ));
               },

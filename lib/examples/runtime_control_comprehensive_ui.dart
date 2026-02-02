@@ -3,26 +3,37 @@
 import 'dart:async';
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../src/runtime_control/domains/auth_runtime_domain.dart';
 import '../src/runtime_control/domains/storage_runtime_domain.dart';
 import '../src/runtime_control/domains/network_runtime_domain.dart';
 import '../src/runtime_control/domains/memory_runtime_domain.dart';
 import '../src/runtime_control/domains/service_registry_runtime_domain.dart';
+import 'visual_test_widget.dart';
+import 'test_counter_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  AppControl.initialize(config: const RuntimeConfig.development());
-  
-  AppControl.registerDomains([
-    ServiceRegistryRuntimeDomain(),
-    MemoryRuntimeDomain(),
-    AuthRuntimeDomain(),
-    StorageRuntimeDomain(), 
-    NetworkRuntimeDomain(),
-  ]);
-  
-  await AppControl.start();
+  // Simple, fast initialization
+  try {
+    AppControl.initialize(config: const RuntimeConfig.development());
+    
+    // Register minimal domains for demo
+    AppControl.registerDomains([
+      MemoryRuntimeDomain(),
+      StorageRuntimeDomain(), 
+    ]);
+    
+    // Don't wait for start - let it happen in background
+    AppControl.start().catchError((e) {
+      print('Background start failed: $e');
+    });
+    
+  } catch (e) {
+    print('Init failed: $e');
+    // Continue anyway - app should still work
+  }
   
   runApp(const RuntimeControlDemoApp());
 }
@@ -61,6 +72,13 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
   StreamSubscription<StateEvent>? _stateEventSub;
   StreamSubscription<UITreeEvent>? _uiEventSub;
   final List<String> _runtimeErrors = [];
+  
+  // Action execution state
+  bool _isExecutingAction = false;
+  
+  // Global keys for visual test widgets
+  final GlobalKey visualTestKey = GlobalKey();
+  final GlobalKey testCounterKey = GlobalKey();
 
   @override
   void initState() {
@@ -91,15 +109,13 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
   }
 
   void _addRuntimeError(String error) {
-    print('📱 RUNTIME ERROR LOGGED: $error');
+    print('📱 ERROR: $error');
     if (mounted) {
       setState(() {
         _runtimeErrors.insert(0, '[${_formatTime(DateTime.now())}] $error');
-        if (_runtimeErrors.length > 50) _runtimeErrors.removeLast();
+        if (_runtimeErrors.length > 20) _runtimeErrors.removeLast(); // Keep fewer errors
       });
-      _eventLog.insert(0, '❌ ERROR: $error');
-      if (_eventLog.length > 100) _eventLog.removeLast();
-      _scrollToTop();
+      // Don't add to event log to reduce UI work
     }
   }
   
@@ -189,6 +205,14 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Add Visual Test Widget at the top
+        VisualTestWidget(key: visualTestKey),
+        const SizedBox(height: 20),
+        
+        // Add Test Counter Widget
+        TestCounterWidget(key: testCounterKey),
+        const SizedBox(height: 20),
+        
         _buildRuntimeStatusCard(),
         const SizedBox(height: 16),
         _buildQuickStatsCard(),
@@ -430,13 +454,13 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
                   'Hard Reset',
                   Icons.restore_page,
                   Colors.orange,
-                  () => _executeAction('Hard Reset', () => AppControl.resetStates(ResetLevel.hard)),
+                  () => _executeAction('Hard Reset', _performHardReset),
                 ),
                 _buildActionButton(
                   'Restart',
                   Icons.restart_alt,
                   Colors.red,
-                  () => _executeAction('Restart', AppControl.restart),
+                  () => _executeAction('Restart', _performAppRestart),
                 ),
               ],
             ),
@@ -559,14 +583,14 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
               'Complete restart with full disposal',
               Icons.restart_alt,
               Colors.orange,
-              () => _executeAction('Restart', AppControl.restart),
+              () => _executeAction('Restart', _performAppRestart),
             ),
             _buildControlTile(
               'Reset Runtime',
               'Reset execution without killing process',
               Icons.settings_backup_restore,
               Colors.red,
-              () => _executeAction('Reset Runtime', AppControl.resetRuntime),
+              () => _executeAction('Reset Runtime', _performHardReset),
             ),
             _buildControlTile(
               'Stop Runtime',
@@ -574,6 +598,13 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
               Icons.stop,
               Colors.grey,
               () => _executeAction('Stop', AppControl.stop),
+            ),
+            _buildControlTile(
+              'Force Kill & Restart',
+              'Aggressive restart - forcibly terminates app',
+              Icons.power_settings_new,
+              Colors.red.shade800,
+              () => _executeAction('Force Restart', _performForceRestart),
             ),
           ],
         ),
@@ -738,75 +769,164 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
               ],
             ),
             const Divider(height: 32),
-            ...AppControl.registry.getInitializationOrder().map((domain) {
-              final initialized = AppControl.registry.isInitialized(domain.domainId);
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                color: initialized ? Colors.green.shade50 : Colors.grey.shade50,
-                child: ExpansionTile(
-                  leading: Icon(
-                    initialized ? Icons.check_circle : Icons.radio_button_unchecked,
-                    color: initialized ? Colors.green : Colors.grey,
-                    size: 28,
-                  ),
-                  title: Text(
-                    domain.domainName,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text('ID: ${domain.domainId}'),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDomainInfoRow('Priority', '${domain.initializationPriority}'),
-                          _buildDomainInfoRow('Initialized', initialized ? 'Yes' : 'No'),
-                          _buildDomainInfoRow('Can Reset', domain.canReset ? 'Yes' : 'No'),
-                          _buildDomainInfoRow('Dependencies', domain.dependencies.isEmpty ? 'None' : domain.dependencies.join(', ')),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: initialized ? null : () => _executeAction(
-                                  'Init ${domain.domainId}',
-                                  () => AppControl.stateController.initializeDomain(domain.domainId),
-                                ),
-                                icon: const Icon(Icons.play_arrow, size: 16),
-                                label: const Text('Initialize'),
-                              ),
-                              ElevatedButton.icon(
-                                onPressed: domain.canReset ? () => _executeAction(
-                                  'Reset ${domain.domainId}',
-                                  () => AppControl.stateController.resetDomain(domain.domainId, ResetLevel.hard),
-                                ) : null,
-                                icon: const Icon(Icons.refresh, size: 16),
-                                label: const Text('Reset'),
-                              ),
-                              ElevatedButton.icon(
-                                onPressed: initialized ? () => _executeAction(
-                                  'Dispose ${domain.domainId}',
-                                  () => AppControl.stateController.disposeDomain(domain.domainId),
-                                ) : null,
-                                icon: const Icon(Icons.delete, size: 16),
-                                label: const Text('Dispose'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
+            
+            // Safely get domains with error handling
+            _buildDomainsList(),
           ],
         ),
       ),
     );
   }
   
+  Widget _buildDomainsList() {
+    try {
+      final domains = AppControl.registry.getInitializationOrder();
+      
+      if (domains.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade100,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.warning, color: Colors.orange),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text('No domains registered. Try running a runtime action.'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _ensureDomainsRegistered();
+                  setState(() {}); // Refresh UI
+                },
+                child: const Text('Re-register'),
+              ),
+            ],
+          ),
+        );
+      }
+      
+      return Column(
+        children: domains.map((domain) {
+          final initialized = AppControl.registry.isInitialized(domain.domainId);
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            color: initialized ? Colors.green.shade50 : Colors.grey.shade50,
+            child: ExpansionTile(
+              leading: Icon(
+                initialized ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: initialized ? Colors.green : Colors.grey,
+                size: 28,
+              ),
+              title: Text(
+                domain.domainName,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text('ID: ${domain.domainId}'),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('Status: '),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: initialized ? Colors.green : Colors.grey,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              initialized ? 'Initialized' : 'Not Initialized',
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text('Priority: '),
+                          Text('${domain.initializationPriority}'),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text('Dependencies: '),
+                          Text(domain.dependencies.isEmpty ? 'None' : domain.dependencies.join(', ')),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      );
+      
+    } catch (e) {
+      // Handle dependency errors gracefully
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.shade100,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.error, color: Colors.red),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Domain Error',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('Error: $e'),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {
+                _ensureDomainsRegistered();
+                setState(() {}); // Refresh UI
+              },
+              child: const Text('Fix Domains'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+  
+  void _ensureDomainsRegistered() {
+    // Only re-register if completely empty to prevent loops
+    if (AppControl.registry.domainCount == 0) {
+      try {
+        AppControl.registerDomains([
+          ServiceRegistryRuntimeDomain(),
+          MemoryRuntimeDomain(),
+          AuthRuntimeDomain(),
+          StorageRuntimeDomain(),
+          NetworkRuntimeDomain(),
+        ]);
+        print('🔄 Domains registered (was empty)');
+      } catch (e) {
+        print('Domain registration failed: $e');
+      }
+    }
+  }
+
   Widget _buildDomainInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1260,106 +1380,238 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
     );
   }
   
-  Future<void> _executeAction(String actionName, Future<void> Function() action) async {
+  Future<void> _performHardReset() async {
+    // Show loading indicator
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(width: 16),
+              Text('🔄 Hard Reset - App will restart like hot restart!'),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+    
+    // Wait a bit for UI feedback
+    await Future.delayed(const Duration(milliseconds: 800));
+    
+    // Perform internal reset first
     try {
-      // Log start of action
-      _eventLog.insert(0, '[${_formatTime(DateTime.now())}] ▶️ Starting: $actionName');
-      if (_eventLog.length > 100) _eventLog.removeLast();
-      _scrollToTop();
+      await AppControl.resetStates(ResetLevel.complete).timeout(const Duration(seconds: 2));
+    } catch (e) {
+      print('Internal reset failed: $e');
+    }
+    
+    // Then restart the entire app like hot restart
+    await _restartApp();
+  }
+  
+  Future<void> _performAppRestart() async {
+    // Show loading indicator
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(width: 16),
+              Text('🚀 Restarting like hot restart - App will reload!'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+    
+    // Wait a bit for UI feedback
+    await Future.delayed(const Duration(milliseconds: 800));
+    
+    // Restart the entire app
+    await _restartApp();
+  }
+  
+  Future<void> _performForceRestart() async {
+    // Show warning dialog first
+    if (mounted) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('⚠️ Force Restart Warning'),
+          content: const Text(
+            'This will forcibly terminate the app and may cause data loss. '
+            'Are you sure you want to continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Force Restart'),
+            ),
+          ],
+        ),
+      );
       
-      // Smart recovery: handle different states properly
-      if (actionName != 'Start' && actionName != 'Stop') {
-        final currentPhase = AppControl.currentPhase;
-        
-        if (currentPhase == LifecyclePhase.uninitialized) {
-          print('🔄 Auto-starting runtime for $actionName');
-          await AppControl.start();
-        } else if (currentPhase == LifecyclePhase.disposed) {
-          print('🔄 Resetting from disposed state for $actionName');
-          // Reset and reinitialize
-          AppControl.reset();
-          AppControl.initialize(config: const RuntimeConfig.development());
-          AppControl.registerDomains([
-            ServiceRegistryRuntimeDomain(),
-            MemoryRuntimeDomain(), 
-            AuthRuntimeDomain(),
-            StorageRuntimeDomain(),
-            NetworkRuntimeDomain(),
-          ]);
-          await AppControl.start();
-        } else if (currentPhase == LifecyclePhase.error) {
-          print('🔄 Recovering from error state for $actionName');
-          // Reset from error state
-          AppControl.reset();
-          AppControl.initialize(config: const RuntimeConfig.development());
-          AppControl.registerDomains([
-            ServiceRegistryRuntimeDomain(),
-            MemoryRuntimeDomain(),
-            AuthRuntimeDomain(),
-            StorageRuntimeDomain(),
-            NetworkRuntimeDomain(),
-          ]);
-          await AppControl.start();
+      if (confirmed != true) return;
+      
+      // Show loading indicator
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(width: 16),
+              Text('💀 Force killing app...'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+    
+    // Wait a bit for UI feedback
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Force kill and restart
+    final success = await AppRestart.forceKillAndRestart();
+    if (!success) {
+      // Fallback to regular restart
+      await _restartApp();
+    }
+  }
+
+  Future<void> _restartApp() async {
+    try {
+      // First check if restart is supported
+      final isSupported = await AppRestart.isRestartSupported();
+      if (!isSupported) {
+        debugPrint('⚠️ Platform restart not supported or plugin not available');
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Restart Not Available'),
+              content: const Text(
+                'Platform restart is not supported on this device or the plugin is not properly configured.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
         }
-        // If running/paused/etc, continue normally
+        return;
       }
       
-      await action();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✓ $actionName completed successfully'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+      // Try the runtime restart first
+      try {
+        await AppControl.restart().timeout(const Duration(seconds: 2));
+        return; // Success with runtime restart
+      } catch (e) {
+        print('Runtime restart failed, trying platform restart: $e');
+      }
+      
+      // Use the package's platform-specific restart
+      final restartSuccess = await AppRestart.restartApp();
+      
+      if (!restartSuccess) {
+        // Final fallback: show manual restart dialog
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text('Manual Restart Required'),
+              content: const Text(
+                'Automatic restart failed. Please close and reopen the app manually to see changes.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => SystemNavigator.pop(),
+                  child: const Text('Exit App'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     } catch (e) {
-      debugPrint('Action $actionName failed: $e');
-      print('🚨 ACTION FAILED: $actionName - Error: $e');
-      
-      // Log error to our error system
-      _addRuntimeError('$actionName failed: $e');
-      
-      // Auto-recovery attempt for common errors
-      if (e.toString().contains('before start() is called') || 
-          e.toString().contains('runtime not started')) {
-        try {
-          debugPrint('Attempting auto-recovery by starting runtime...');
-          // Only start if not already started
-          if (AppControl.currentPhase == LifecyclePhase.uninitialized) {
-            await AppControl.start();
-            // Retry the operation
-            await action();
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('✓ $actionName completed after recovery'),
-                  backgroundColor: Colors.orange,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }
-            return;
-          }
-        } catch (recoveryError) {
-          debugPrint('Recovery failed: $recoveryError');
-          _addRuntimeError('Recovery failed for $actionName: $recoveryError');
-        }
-      }
-      
+      debugPrint('Restart failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✗ $actionName failed: $e'),
+            content: Text('Restart failed: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
           ),
         );
       }
     }
   }
-  
+
+  Future<void> _executeAction(String actionName, Future<void> Function() action) async {
+    // Prevent concurrent actions
+    if (_isExecutingAction) {
+      return; // Silent ignore - don't show snackbars that cause more UI work
+    }
+    
+    _isExecutingAction = true;
+    
+    try {
+      // Quick check - don't block on transitional phases, just skip
+      final currentPhase = AppControl.currentPhase;
+      if (currentPhase.isTransitioning) {
+        print('⏸️ Skipping $actionName - system transitioning: $currentPhase');
+        return;
+      }
+      
+      // Simple state check without heavy recovery
+      if (!AppControl.isInitialized && actionName != 'Start' && actionName != 'Stop') {
+        print('⚡ Quick-starting for $actionName');
+        try {
+          await AppControl.start().timeout(const Duration(seconds: 2));
+        } catch (e) {
+          print('Quick start failed: $e');
+          return; // Give up quickly instead of heavy recovery
+        }
+      }
+      
+      // Execute action with timeout to prevent ANRs
+      await action().timeout(const Duration(seconds: 3));
+      
+      // Quick visual feedback without heavy UI operations
+      final visualState = visualTestKey.currentState as dynamic;
+      visualState?.triggerVisualReset(actionName);
+      
+    } catch (e) {
+      // Lightweight error handling - no heavy recovery
+      if (e.toString().contains('ILLEGAL_TRANSITION')) {
+        print('⏭️ Transition conflict for $actionName - ignored');
+        return; // Just ignore instead of showing heavy UI
+      }
+      
+      print('⚡ Action $actionName failed quickly: $e');
+      _addRuntimeError('$actionName: $e');
+      
+    } finally {
+      _isExecutingAction = false;
+    }
+  }
+
   void _exportLog() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

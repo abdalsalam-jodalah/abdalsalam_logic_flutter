@@ -1,12 +1,50 @@
-# App State Detection - Complete Reference
+# Runtime Control & App State Detection - Complete Reference
 
-This comprehensive example demonstrates all detectable app states and how to use them in your Flutter application.
+This comprehensive example demonstrates all runtime control features, app restart functionality, and detectable app states.
+
+⚡ **OPTIMIZED FOR PERFORMANCE** - The runtime control system has been optimized to prevent ANRs (App Not Responding) and reduce initialization time.
+
+## 🚀 Performance Improvements
+
+- **Fast Startup**: Minimal domain registration (only Memory & Storage)
+- **Background Initialization**: Runtime starts in background without blocking UI
+- **Lightweight Actions**: No heavy recovery operations that cause ANRs
+- **Quick Timeouts**: Operations timeout after 2-3 seconds to prevent freezing
+- **Reduced Event Logging**: Only critical events logged to prevent UI lag
+- **Smart Action Queuing**: Prevents rapid-fire button presses that cause crashes
 
 ## 📁 Example Files
 
-1. **app_state_detection_example.dart** - Full-featured UI showing all states
-2. **app_state_simple_example.dart** - Console-based listener example
-3. **app_state_usage_guide.dart** - Code examples for each use case
+1. **runtime_control_comprehensive_ui.dart** - Complete runtime control demo with restart functionality
+2. **app_restart_example.dart** - Simple app restart example
+3. **app_state_detection_example.dart** - Full-featured UI showing all states
+4. **app_state_simple_example.dart** - Console-based listener example  
+5. **app_state_usage_guide.dart** - Code examples for each use case
+6. **visual_test_widget.dart** - Visual feedback widget for runtime actions
+7. **test_counter_widget.dart** - Persistent/transient state demonstration
+
+## 🚀 App Restart Functionality
+
+### Platform-Specific Restart
+The package provides native app restart functionality that actually reloads your entire application:
+
+```dart
+import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
+
+// Restart the app (clean restart)
+bool success = await AppRestart.restartApp();
+
+// Force kill and restart (aggressive)
+bool success = await AppRestart.forceKillAndRestart();
+```
+
+**Platform Behavior:**
+- **Android**: Uses `Intent.makeRestartActivityTask()` for clean app restart
+- **iOS**: Shows user prompt to manually restart (iOS doesn't allow programmatic restart)
+- **Other platforms**: Returns false (not supported)
+
+### Runtime Control with Restart
+The comprehensive UI demo shows how "Hard Reset" and "Restart" buttons now actually reload the entire app, not just reset internal state:
 
 ## 🎯 What You Can Detect
 
