@@ -51,6 +51,18 @@ export 'src/app_initialization/app_initializer_impl.dart';
 
 export 'src/networking/api_client.dart';
 export 'src/networking/api_client_impl.dart';
+export 'src/networking/network_api.dart';
+export 'src/networking/network_registry.dart';
+export 'src/networking/network_registry_impl.dart';
+export 'src/networking/request_manager.dart';
+export 'src/networking/request_manager_impl.dart';
+export 'src/networking/auth_token_provider.dart';
+export 'src/networking/status_code_strategy.dart';
+export 'src/networking/models/http_method.dart';
+export 'src/networking/models/api_url.dart';
+export 'src/networking/models/network_response.dart';
+export 'src/networking/models/pending_request.dart';
+export 'src/networking/exceptions/networking_exceptions.dart';
 
 export 'src/storage/storage_service.dart';
 export 'src/storage/shared_preferences_storage.dart';
