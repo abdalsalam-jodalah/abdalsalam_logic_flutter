@@ -1,5 +1,6 @@
 // lib/src/fcm/fcm_service_impl.dart
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../core/errors/exception_mapper.dart';
 import 'fcm_service.dart';
 
 class FcmServiceImpl implements FcmService {
@@ -17,8 +18,8 @@ class FcmServiceImpl implements FcmService {
       );
 
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    } catch (e) {
-      rethrow;
+    } catch (e, stackTrace) {
+      throw ExceptionMapper.mapException(e, stackTrace);
     }
   }
 

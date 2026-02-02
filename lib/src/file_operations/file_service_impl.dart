@@ -1,6 +1,8 @@
 // lib/src/file_operations/file_service_impl.dart
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import '../core/errors/storage_exception.dart';
+import '../core/errors/exception_mapper.dart';
 import 'file_service.dart';
 
 class FileServiceImpl implements FileService {
@@ -21,8 +23,8 @@ class FileServiceImpl implements FileService {
       await file.create(recursive: true);
       await file.writeAsBytes(bytes);
       return file;
-    } catch (e) {
-      rethrow;
+    } catch (e, stackTrace) {
+      throw ExceptionMapper.mapException(e, stackTrace);
     }
   }
 
@@ -33,8 +35,8 @@ class FileServiceImpl implements FileService {
       await file.create(recursive: true);
       await file.writeAsString(content);
       return file;
-    } catch (e) {
-      rethrow;
+    } catch (e, stackTrace) {
+      throw ExceptionMapper.mapException(e, stackTrace);
     }
   }
 
@@ -43,11 +45,14 @@ class FileServiceImpl implements FileService {
     try {
       final file = File(filePath);
       if (!await file.exists()) {
-        throw Exception('File does not exist: $filePath');
+        throw StorageException(
+          message: 'File does not exist: $filePath',
+          code: 'FILE_NOT_FOUND',
+        );
       }
       return await file.readAsString();
-    } catch (e) {
-      rethrow;
+    } catch (e, stackTrace) {
+      throw ExceptionMapper.mapException(e, stackTrace);
     }
   }
 

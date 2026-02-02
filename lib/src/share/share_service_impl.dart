@@ -1,5 +1,6 @@
 // lib/src/share/share_service_impl.dart
 import 'package:share_plus/share_plus.dart';
+import '../core/errors/exception_mapper.dart';
 import 'share_service.dart';
 
 class ShareServiceImpl implements ShareService {
@@ -18,8 +19,8 @@ class ShareServiceImpl implements ShareService {
         text,
         subject: subject,
       );
-    } catch (e) {
-      rethrow;
+    } catch (e, stackTrace) {
+      throw ExceptionMapper.mapException(e, stackTrace);
     }
   }
 
