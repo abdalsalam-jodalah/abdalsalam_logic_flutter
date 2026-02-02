@@ -14,6 +14,14 @@ A comprehensive Flutter logic package providing reusable modules for app state, 
   - Navigation, Theme, Locale management
   - [📖 Complete App State Guide](docs/APP_STATE_GUIDE.md)
   - [🏗️ Modular Architecture Guide](docs/MODULAR_ARCHITECTURE.md)
+- **Runtime Control** - Dynamic app control and domain management system
+  - **User-Controlled Domains** - Define your own runtime domains without hardcoded dependencies
+  - **UI Tree Control** - Real-time UI refresh, rebuild, and recreation
+  - **App Restart** - Native app restart functionality (Android/iOS)
+  - **Dynamic Registration** - Register domains with custom priorities and dependencies
+  - **Validation System** - Comprehensive domain validation and consistency checks
+  - **Event Streaming** - Real-time runtime events and state changes
+  - [📖 Runtime Control Documentation](docs/RUNTIME_CONTROL.md)
 - **App Initialization** - Structured app initialization with service orchestration
 - **API & Networking** - HTTP client with interceptors, error handling, and token management
 - **Logging** - Comprehensive logging service with multiple log levels
@@ -254,7 +262,110 @@ See [Installation Guide](docs/APP_STATE_GUIDE.md#installation) for platform-spec
 
 ---
 
-### Other Core Features
+### Runtime Control System
+
+The Runtime Control system provides comprehensive app control with user-defined domain architectures.
+
+#### Key Features
+
+- **100% User-Controlled**: Define your own domains without hardcoded dependencies
+- **Dynamic Registration**: Register domains with custom initialization order and dependencies  
+- **Real App Restart**: Native restart functionality using platform-specific APIs
+- **UI Tree Management**: Refresh, rebuild, or recreate entire UI trees
+- **Validation & Safety**: Comprehensive validation prevents common domain registration errors
+
+#### Quick Start
+
+```dart
+import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
+
+// 1. Create your custom domains
+class GameEngineDomain implements RuntimeDomain {
+  @override
+  String get domainId => 'game_engine';
+  @override
+  String get domainName => 'Game Engine Core';
+  @override
+  int get initializationPriority => 100;
+  @override
+  List<String> get dependencies => [];
+  
+  @override
+  Future<void> initialize() async {
+    // Your initialization logic
+  }
+  
+  @override
+  Future<void> reset(ResetLevel level) async {
+    // Your reset logic
+  }
+  
+  // ... other required methods
+}
+
+// 2. Register domains dynamically
+final registry = DomainRegistry();
+registry.register(GameEngineDomain());
+registry.register(PlayerProgressDomain()); // depends on game_engine
+
+// 3. Get initialization order (automatically sorted by dependencies)
+final initOrder = registry.getInitializationOrder();
+
+// 4. Use app control for runtime operations
+final appControl = AppControl.instance;
+
+// Restart app (native platform restart)
+await appControl.restartApp();
+
+// UI tree operations  
+await appControl.refreshUI();
+await appControl.rebuildAllTrees();
+await appControl.recreateAllTrees();
+```
+
+#### Domain Architecture Examples
+
+The system supports any domain architecture you define:
+
+**Game Development:**
+```dart
+// User defines game-specific domains
+final gameDomains = [
+  GameEngineDomain(),           // Priority: 100, Dependencies: []
+  AudioDomain(),               // Priority: 90,  Dependencies: []  
+  GraphicsDomain(),           // Priority: 95,  Dependencies: [game_engine]
+  PlayerProgressDomain(),     // Priority: 80,  Dependencies: [game_engine]
+  LeaderboardDomain(),       // Priority: 70,  Dependencies: [player_progress]
+];
+```
+
+**E-commerce Platform:**
+```dart
+// User defines commerce-specific domains  
+final commerceDomains = [
+  ProductCatalogDomain(),     // Priority: 90,  Dependencies: []
+  InventoryDomain(),         // Priority: 95,  Dependencies: []
+  ShoppingCartDomain(),      // Priority: 80,  Dependencies: [product_catalog] 
+  PaymentProcessorDomain(),  // Priority: 85,  Dependencies: []
+  CheckoutDomain(),          // Priority: 70,  Dependencies: [shopping_cart, payment]
+];
+```
+
+**Social Media App:**
+```dart
+// User defines social-specific domains
+final socialDomains = [
+  UserProfileDomain(),       // Priority: 100, Dependencies: []
+  PostFeedDomain(),         // Priority: 90,  Dependencies: [user_profile]
+  MessagingDomain(),        // Priority: 80,  Dependencies: [user_profile] 
+  NotificationDomain(),     // Priority: 70,  Dependencies: [messaging, post_feed]
+  ModerationDomain(),       // Priority: 75,  Dependencies: [post_feed]
+];
+```
+
+The system automatically calculates initialization order based on dependencies and validates consistency to prevent common errors.
+
+---
 
 #### API & Networking
 
