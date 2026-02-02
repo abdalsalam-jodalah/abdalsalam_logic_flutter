@@ -66,36 +66,22 @@ class NetworkException implements AppException {
 
 class TimeoutException extends NetworkException {
   const TimeoutException({
-    String message = 'Request timeout',
-    String code = 'NETWORK_TIMEOUT',
-    AppExceptionSeverity severity = AppExceptionSeverity.warning,
-    bool isRecoverable = true,
-    Exception? originalException,
-    StackTrace? stackTrace,
-  }) : super(
-          message: message,
-          code: code,
-          severity: severity,
-          isRecoverable: isRecoverable,
-          originalException: originalException,
-          stackTrace: stackTrace,
-        );
+    super.message = 'Request timeout',
+    super.code = 'NETWORK_TIMEOUT',
+    super.severity = AppExceptionSeverity.warning,
+    super.isRecoverable = true,
+    super.originalException,
+    super.stackTrace,
+  });
 }
 
 class OfflineException extends NetworkException {
   const OfflineException({
-    String message = 'No internet connection',
-    String code = 'NETWORK_OFFLINE',
-    AppExceptionSeverity severity = AppExceptionSeverity.warning,
-    bool isRecoverable = true,
-    Exception? originalException,
-    StackTrace? stackTrace,
-  }) : super(
-          message: message,
-          code: code,
-          severity: severity,
-          isRecoverable: isRecoverable,
-          originalException: originalException,
-          stackTrace: stackTrace,
-        );
+    super.message = 'No internet connection',
+    super.code = 'NETWORK_OFFLINE',
+    super.severity = AppExceptionSeverity.warning,
+    super.isRecoverable = true,
+    super.originalException,
+    super.stackTrace,
+  });
 }

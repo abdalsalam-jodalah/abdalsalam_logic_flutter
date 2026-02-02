@@ -1,8 +1,6 @@
 // lib/src/storage/hive_storage.dart
 import 'package:hive_flutter/hive_flutter.dart';
 import '../core/interfaces/repository_interface.dart';
-import '../core/errors/storage_exception.dart';
-import '../core/errors/exception_mapper.dart';
 import 'abstractions/entity_storage_comprehensive.dart';
 import 'abstractions/query_comprehensive.dart';
 import 'types/storage_metadata.dart';

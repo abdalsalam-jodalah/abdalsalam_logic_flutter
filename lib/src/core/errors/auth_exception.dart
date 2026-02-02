@@ -66,36 +66,22 @@ class AuthException implements AppException {
 
 class TokenExpiredException extends AuthException {
   const TokenExpiredException({
-    String message = 'Authentication token has expired',
-    String code = 'AUTH_TOKEN_EXPIRED',
-    AppExceptionSeverity severity = AppExceptionSeverity.warning,
-    bool isRecoverable = true,
-    Exception? originalException,
-    StackTrace? stackTrace,
-  }) : super(
-          message: message,
-          code: code,
-          severity: severity,
-          isRecoverable: isRecoverable,
-          originalException: originalException,
-          stackTrace: stackTrace,
-        );
+    super.message = 'Authentication token has expired',
+    super.code = 'AUTH_TOKEN_EXPIRED',
+    super.severity = AppExceptionSeverity.warning,
+    super.isRecoverable = true,
+    super.originalException,
+    super.stackTrace,
+  });
 }
 
 class PermissionException extends AuthException {
   const PermissionException({
-    String message = 'Insufficient permissions',
-    String code = 'AUTH_PERMISSION_DENIED',
-    AppExceptionSeverity severity = AppExceptionSeverity.error,
-    bool isRecoverable = false,
-    Exception? originalException,
-    StackTrace? stackTrace,
-  }) : super(
-          message: message,
-          code: code,
-          severity: severity,
-          isRecoverable: isRecoverable,
-          originalException: originalException,
-          stackTrace: stackTrace,
-        );
+    super.message = 'Insufficient permissions',
+    super.code = 'AUTH_PERMISSION_DENIED',
+    super.severity = AppExceptionSeverity.error,
+    super.isRecoverable = false,
+    super.originalException,
+    super.stackTrace,
+  });
 }
