@@ -12,8 +12,8 @@
 ///
 /// ARCHITECTURE:
 /// - Base Storage: Lifecycle management (initialize, clear, dispose)
-/// - KeyValueStorage<T>: Key-value operations
-/// - EntityStorage<ID, T>: Structured entity operations
+/// - KeyValueStorage\<T\>: Key-value operations
+/// - EntityStorage\<ID, T\>: Structured entity operations
 /// - Optional Capabilities: Transaction, Query, Schema, Migration, etc.
 ///
 /// See COMPREHENSIVE_STORAGE_GUIDE.md for detailed documentation.

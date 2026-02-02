@@ -16,7 +16,7 @@ import '../exceptions/storage_exceptions.dart';
 ///
 /// Supported value types depend on implementation:
 /// - Primitives: String, int, double, bool
-/// - Collections: List<T>, Map<String, T>
+/// - Collections: List\<T\>, Map\<String, T\>
 /// - Custom types via serialization
 ///
 /// Generic type [T] specifies the value type this storage holds.

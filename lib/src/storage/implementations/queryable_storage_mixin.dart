@@ -180,7 +180,9 @@ mixin QueryableStorageMixin<ID, T> on EntityStorage<ID, T> {
       if (json is Map<String, dynamic>) {
         return json;
       }
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore JSON decode errors
+    }
 
     return {};
   }

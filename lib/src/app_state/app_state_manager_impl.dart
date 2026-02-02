@@ -573,6 +573,7 @@ class AppStateManagerImpl
 
       _deviceController.add(_deviceInfo_!);
     } catch (error) {
+      // Silently ignore device info update errors
     }
   }
 
@@ -946,7 +947,7 @@ class AppStateManagerImpl
         ph.Permission.location,
         ph.Permission.locationAlways,
         ph.Permission.locationWhenInUse,
-        ph.Permission.calendar,
+        ph.Permission.calendarWriteOnly,
         ph.Permission.contacts,
         ph.Permission.photos,
         ph.Permission.videos,
@@ -1016,7 +1017,7 @@ class AppStateManagerImpl
     if (permission == ph.Permission.locationWhenInUse) {
       return PermissionType.locationWhenInUse;
     }
-    if (permission == ph.Permission.calendar) return PermissionType.calendar;
+    if (permission == ph.Permission.calendarWriteOnly) return PermissionType.calendar;
     if (permission == ph.Permission.contacts) return PermissionType.contacts;
     if (permission == ph.Permission.photos) return PermissionType.photos;
     if (permission == ph.Permission.videos) return PermissionType.videos;
@@ -1083,6 +1084,7 @@ class AppStateManagerImpl
       );
       _deviceOrientationController.add(_deviceOrientationInfo);
     } catch (e) {
+      // Silently ignore device orientation update errors
     }
   }
 
@@ -1107,6 +1109,7 @@ class AppStateManagerImpl
       );
       _screenMetricsController.add(_screenMetricsInfo);
     } catch (e) {
+      // Silently ignore screen metrics update errors
     }
   }
 
@@ -1191,6 +1194,7 @@ class AppStateManagerImpl
             gateway = await _networkInfoPlugin.getWifiGatewayIP();
             subnet = await _networkInfoPlugin.getWifiSubmask();
           } catch (e) {
+            // Silently ignore WiFi info retrieval errors
           }
         }
 
@@ -1233,6 +1237,7 @@ class AppStateManagerImpl
             operatorName = await _networkInfoPlugin.getWifiName();
             isoCountryCode = await _networkInfoPlugin.getWifiBSSID();
           } catch (e) {
+            // Silently ignore mobile data info retrieval errors
           }
         }
 

@@ -2,7 +2,6 @@
 // HTTP-based executor for prefetch requests (requires HTTP client injection)
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'prefetch_exception.dart';
 import 'prefetch_executor.dart';
