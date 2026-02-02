@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 
+import 'app_control.dart';
 import 'app_control_runtime.dart';
 import 'domain_registry.dart';
 import 'lifecycle_phase.dart';
@@ -60,6 +61,12 @@ class AppControlRuntimeImpl implements AppControlRuntime {
     _emitEvent(RuntimeEvent.starting());
     
     try {
+      // STRICT ENFORCEMENT: Validate all domains before starting
+      _registry.validateConsistency();
+      
+      // Enforce minimum required domains if configured
+      _enforceRequiredDomains();
+      
       await _stateController.initializeAll();
       
       await _transitionTo(LifecyclePhase.initialized);
@@ -338,4 +345,72 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   
   @override
   bool get isInitialized => _currentPhase.index >= LifecyclePhase.initialized.index;
+  
+  /// STRICT ENFORCEMENT: Ensures USER-CONFIGURED required domains are registered
+  void _enforceRequiredDomains() {
+    // Get required domains from USER CONFIG (not hard-coded)
+    final config = AppControl.config;
+    
+    // If strict validation is enabled, enforce USER requirements
+    if (config.enableStrictValidation) {
+      final registeredIds = _registry.getAllDomains().map((d) => d.domainId).toSet();
+      
+      // Enforce ONLY domains that USER explicitly required in config
+      for (final requiredId in config.requiredDomains) {
+        if (!registeredIds.contains(requiredId)) {
+          throw RuntimeException(
+            'Required domain "$requiredId" is not registered. '
+            'This is YOUR requirement from RuntimeConfig.requiredDomains. '
+            'Either register a domain with ID "$requiredId" or remove it from requiredDomains.',
+          );
+        }
+      }
+      
+      // Optional suggestions (USER can ignore these)
+      if (config.requiredDomains.isEmpty) {
+        const optionalSuggestions = {
+          'storage': 'Consider a domain for data persistence',
+          'logging': 'Consider a domain for error tracking',
+        };
+        
+        for (final entry in optionalSuggestions.entries) {
+          if (!registeredIds.contains(entry.key)) {
+            debugPrint('💡 Optional: ${entry.value} (you can ignore this)');
+          }
+        }
+      }
+      
+      // Only enforce minimum if user hasn't configured specific requirements
+      if (registeredIds.isEmpty && config.requiredDomains.isEmpty) {
+        throw RuntimeException(
+          'No domains registered and no specific requirements configured. '
+          'Either register domains or set requiredDomains in RuntimeConfig, or disable strict validation.',
+        );
+      }
+      
+      // Additional user-helpful validation
+      _validateUserDomainPatterns(registeredIds);
+    }
+  }
+  
+  void _validateUserDomainPatterns(Set<String> registeredIds) {
+    // These are just SUGGESTIONS based on common patterns - user can ignore
+    
+    // Pattern suggestion: auth usually needs storage
+    if (registeredIds.contains('auth') && !registeredIds.contains('storage')) {
+      debugPrint('💡 Pattern suggestion: Auth domains often need storage for tokens (optional)');
+    }
+    
+    // Pattern suggestion: network usually needs auth  
+    if (registeredIds.contains('network') && !registeredIds.contains('auth')) {
+      debugPrint('💡 Pattern suggestion: Network domains often need auth for APIs (optional)');
+    }
+    
+    // Performance note (not a requirement)
+    if (registeredIds.length > 20) {
+      debugPrint('ℹ️ Performance note: ${registeredIds.length} domains. Consider grouping for faster startup (optional)');
+    }
+    
+    // Note: All of these are suggestions - user has complete control
+  }
 }

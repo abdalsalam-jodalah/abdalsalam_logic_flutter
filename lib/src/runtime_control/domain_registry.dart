@@ -15,6 +15,9 @@ class DomainRegistry {
       );
     }
     
+    // STRICT VALIDATION: Enforce domain rules
+    _validateDomainRegistration(domain);
+    
     _domains[domain.domainId] = domain;
     _initializationStatus[domain.domainId] = false;
   }
@@ -146,5 +149,111 @@ class DomainRegistry {
   
   bool exists(String domainId) {
     return _domains.containsKey(domainId);
+  }
+  
+  /// STRICT VALIDATION: Enforces consistent domain registration
+  void _validateDomainRegistration(RuntimeDomain domain) {
+    // Rule 1: Domain ID must be non-empty and lowercase
+    if (domain.domainId.isEmpty) {
+      throw DomainRegistrationException(
+        'Domain ID cannot be empty for domain: ${domain.domainName}',
+      );
+    }
+    
+    if (domain.domainId != domain.domainId.toLowerCase()) {
+      throw DomainRegistrationException(
+        'Domain ID must be lowercase: "${domain.domainId}" should be "${domain.domainId.toLowerCase()}"',
+      );
+    }
+    
+    // Rule 2: Domain name must be non-empty
+    if (domain.domainName.isEmpty) {
+      throw DomainRegistrationException(
+        'Domain name cannot be empty for domain: ${domain.domainId}',
+      );
+    }
+    
+    // Rule 3: Priority must be positive
+    if (domain.initializationPriority <= 0) {
+      throw DomainRegistrationException(
+        'Domain initialization priority must be positive for domain: ${domain.domainId}',
+      );
+    }
+    
+    // Rule 4: Dependencies cannot include self
+    if (domain.dependencies.contains(domain.domainId)) {
+      throw DomainRegistrationException(
+        'Domain cannot depend on itself: ${domain.domainId}',
+      );
+    }
+    
+    // Rule 5: Dependencies must be lowercase
+    for (final dep in domain.dependencies) {
+      if (dep.isEmpty) {
+        throw DomainRegistrationException(
+          'Empty dependency in domain: ${domain.domainId}',
+        );
+      }
+      if (dep != dep.toLowerCase()) {
+        throw DomainRegistrationException(
+          'Dependency IDs must be lowercase: "$dep" should be "${dep.toLowerCase()}" in domain: ${domain.domainId}',
+        );
+      }
+    }
+    
+    // Rule 6: Domain must implement canReset if it has reset logic
+    if (!domain.canReset) {
+      // This is a warning - we'll allow non-resettable domains but log it
+      print('⚠️ Warning: Domain ${domain.domainId} is not resettable. Consider implementing reset logic.');
+    }
+  }
+  
+  /// Validates all domains have consistent registration patterns
+  void validateConsistency() {
+    final allIds = _domains.keys.toSet();
+    
+    // Check for reserved domain IDs
+    const reservedIds = {'system', 'app', 'flutter', 'dart', 'core'};
+    for (final id in allIds) {
+      if (reservedIds.contains(id)) {
+        throw DomainRegistrationException(
+          'Domain ID "$id" is reserved and cannot be used',
+        );
+      }
+    }
+    
+    // Check for duplicate names
+    final nameToIds = <String, List<String>>{};
+    for (final domain in _domains.values) {
+      nameToIds.putIfAbsent(domain.domainName, () => []).add(domain.domainId);
+    }
+    
+    for (final entry in nameToIds.entries) {
+      if (entry.value.length > 1) {
+        throw DomainRegistrationException(
+          'Duplicate domain name "${entry.key}" used by: ${entry.value.join(", ")}',
+        );
+      }
+    }
+    
+    // Check for priority conflicts in same dependency level
+    _validatePriorityConsistency();
+  }
+  
+  void _validatePriorityConsistency() {
+    final domains = getAllDomains();
+    final priorityGroups = <int, List<String>>{};
+    
+    for (final domain in domains) {
+      priorityGroups.putIfAbsent(domain.initializationPriority, () => [])
+          .add(domain.domainId);
+    }
+    
+    for (final entry in priorityGroups.entries) {
+      if (entry.value.length > 1) {
+        print('ℹ️ Note: Multiple domains have priority ${entry.key}: ${entry.value.join(", ")}');
+        print('   Dependencies will determine actual order.');
+      }
+    }
   }
 }

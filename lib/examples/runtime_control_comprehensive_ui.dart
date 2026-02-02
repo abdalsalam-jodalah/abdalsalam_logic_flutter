@@ -926,29 +926,6 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
       }
     }
   }
-
-  Widget _buildDomainInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.grey),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
   
   Widget _buildDomainDependencyCard() {
     return Card(

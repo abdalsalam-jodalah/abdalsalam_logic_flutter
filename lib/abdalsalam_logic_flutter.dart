@@ -110,4 +110,3 @@ export 'src/runtime_control/runtime_controlled_app.dart';
 export 'src/runtime_control/platform/app_restart.dart';
 
 // Examples
-export 'examples/plugin_test_widget.dart';

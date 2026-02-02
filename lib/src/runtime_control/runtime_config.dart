@@ -24,6 +24,15 @@ class RuntimeConfig {
   
   final bool enableRecoveryMode;
   
+  /// Set of domain IDs that must be registered (enforced if enableStrictValidation is true)
+  final Set<String> requiredDomains;
+  
+  /// Enforce domain naming conventions (lowercase IDs, non-empty names)
+  final bool enforceDomainNaming;
+  
+  /// Validate domain consistency (unique names, valid priorities, etc.)
+  final bool validateDomainConsistency;
+  
   const RuntimeConfig({
     this.enableDebugMode = false,
     this.enableStrictValidation = true,
@@ -35,6 +44,9 @@ class RuntimeConfig {
     this.enforceRegistration = true,
     this.preventUnregisteredState = true,
     this.enableRecoveryMode = false,
+    this.requiredDomains = const {},
+    this.enforceDomainNaming = true,
+    this.validateDomainConsistency = true,
   });
   
   const RuntimeConfig.development()
@@ -47,7 +59,10 @@ class RuntimeConfig {
         shutdownTimeout = const Duration(seconds: 15),
         enforceRegistration = true,
         preventUnregisteredState = true,
-        enableRecoveryMode = true;
+        enableRecoveryMode = true,
+        requiredDomains = const {},
+        enforceDomainNaming = true,
+        validateDomainConsistency = true;
   
   const RuntimeConfig.production()
       : enableDebugMode = false,
@@ -59,11 +74,14 @@ class RuntimeConfig {
         shutdownTimeout = const Duration(seconds: 5),
         enforceRegistration = true,
         preventUnregisteredState = true,
-        enableRecoveryMode = false;
+        enableRecoveryMode = false,
+        requiredDomains = const {}, // USER configures what they need
+        enforceDomainNaming = true,
+        validateDomainConsistency = true;
   
   const RuntimeConfig.testing()
       : enableDebugMode = true,
-        enableStrictValidation = true,
+        enableStrictValidation = false,
         allowRuntimeReset = true,
         trackLifecycleEvents = true,
         defaultResetLevel = ResetLevel.complete,
@@ -71,7 +89,10 @@ class RuntimeConfig {
         shutdownTimeout = const Duration(seconds: 2),
         enforceRegistration = false,
         preventUnregisteredState = false,
-        enableRecoveryMode = true;
+        enableRecoveryMode = true,
+        requiredDomains = const {},
+        enforceDomainNaming = false,
+        validateDomainConsistency = false;
   
   RuntimeConfig copyWith({
     bool? enableDebugMode,
@@ -84,6 +105,9 @@ class RuntimeConfig {
     bool? enforceRegistration,
     bool? preventUnregisteredState,
     bool? enableRecoveryMode,
+    Set<String>? requiredDomains,
+    bool? enforceDomainNaming,
+    bool? validateDomainConsistency,
   }) {
     return RuntimeConfig(
       enableDebugMode: enableDebugMode ?? this.enableDebugMode,
@@ -96,6 +120,9 @@ class RuntimeConfig {
       enforceRegistration: enforceRegistration ?? this.enforceRegistration,
       preventUnregisteredState: preventUnregisteredState ?? this.preventUnregisteredState,
       enableRecoveryMode: enableRecoveryMode ?? this.enableRecoveryMode,
+      requiredDomains: requiredDomains ?? this.requiredDomains,
+      enforceDomainNaming: enforceDomainNaming ?? this.enforceDomainNaming,
+      validateDomainConsistency: validateDomainConsistency ?? this.validateDomainConsistency,
     );
   }
 }

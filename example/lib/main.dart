@@ -3,6 +3,7 @@ import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 import 'package:abdalsalam_logic_flutter/examples/app_state_detection_example.dart';
 import 'package:abdalsalam_logic_flutter/examples/runtime_control_comprehensive_ui.dart';
 import 'package:abdalsalam_logic_flutter/examples/runtime_control_interactive_demo.dart';
+import 'package:abdalsalam_logic_flutter/examples/domain_registration_example.dart' as domain_reg;
 import 'storage_designer.dart';
 import 'storage_inspector.dart';
 
@@ -36,7 +37,7 @@ void main() async {
   
   AppControl.initialize(config: const RuntimeConfig.development());
   AppControl.registerDomains([
-    LoggingDomain(),
+    domain_reg.LoggingDomain(),
     StorageDomain(),
     NetworkingDomain(),
     AuthDomain(),
@@ -102,10 +103,10 @@ class HomeMenu extends StatelessWidget {
             FilledButton(
               onPressed: () {
                 Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const PluginTestWidget(),
+                  builder: (_) => const RuntimeControlHomePage(),
                 ));
               },
-              child: const Text('🔌 Plugin Test'),
+              child: const Text('🔌 Runtime Control'),
             ),
             const SizedBox(height: 12),
             FilledButton(
