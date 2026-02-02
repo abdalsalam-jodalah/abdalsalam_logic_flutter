@@ -108,7 +108,7 @@ class PrefetchHttpExecutor implements PrefetchExecutor {
         requestId: request.id,
         data: response.data,
       );
-    } on TimeoutException catch (e) {
+    } on TimeoutException {
       throw PrefetchTimeoutException(
         message: 'Request timed out',
         timeout: timeout,
@@ -177,7 +177,7 @@ class PrefetchHttpExecutor implements PrefetchExecutor {
         totalPages: currentPage - config.startPage,
         currentPage: currentPage,
       );
-    } on TimeoutException catch (e) {
+    } on TimeoutException {
       throw PrefetchTimeoutException(
         message: 'Paginated request timed out at page $currentPage',
         timeout: timeout,

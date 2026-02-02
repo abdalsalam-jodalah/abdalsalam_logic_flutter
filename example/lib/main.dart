@@ -12,12 +12,12 @@ void main() async {
   const logConfig = LogConfig(
     coreConfig: LoggerCoreConfig(
       environment: LogEnvironment.development,
-      environmentLevels: const {
+      environmentLevels: {
         LogEnvironment.development: LogLevel.debug,
         LogEnvironment.profile: LogLevel.info,
         LogEnvironment.release: LogLevel.warning,
       },
-      targetsPerEnvironment: const {
+      targetsPerEnvironment: {
         LogEnvironment.development: {LogTarget.console},
         LogEnvironment.profile: {LogTarget.console},
         LogEnvironment.release: {LogTarget.console, LogTarget.file},
@@ -25,7 +25,7 @@ void main() async {
       allowUnregisteredModules: true,
       strictMode: false,
     ),
-    moduleConfig: const LoggerModuleRegistryConfig(
+    moduleConfig: LoggerModuleRegistryConfig(
       globalLevel: LogLevel.debug,
       enableColors: true,
       modules: {},

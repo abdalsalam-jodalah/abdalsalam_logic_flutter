@@ -19,10 +19,31 @@ void example1SimpleConfiguration() {
   print('Example 1: Simple Configuration');
   print('--------------------------------');
 
-  final config = LogConfig.simple(
+  final coreConfig = LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.info,
+      LogEnvironment.profile: LogLevel.info,
+      LogEnvironment.release: LogLevel.warning,
+    },
+    targetsPerEnvironment: const {
+      LogEnvironment.development: {LogTarget.console},
+      LogEnvironment.profile: {LogTarget.console},
+      LogEnvironment.release: {LogTarget.file},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
+  );
+
+  final moduleConfig = LoggerModuleRegistryConfig(
     globalLevel: LogLevel.info,
     enableColors: true,
-    allowUnregisteredModules: true,
+    modules: const {},
+  );
+
+  final config = LogConfig(
+    coreConfig: coreConfig,
+    moduleConfig: moduleConfig,
   );
 
   LoggerImpl.initialize(config);
@@ -160,10 +181,36 @@ void example4StrictModeConfiguration() {
   print('Example 4: Strict Mode with Validation');
   print('---------------------------------------');
 
-  final config = LogConfig.simple(
-    globalLevel: LogLevel.info,
-    strictMode: true,
+  final coreConfig = LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.info,
+      LogEnvironment.profile: LogLevel.debug,
+      LogEnvironment.release: LogLevel.warning,
+    },
+    targetsPerEnvironment: const {
+      LogEnvironment.development: {LogTarget.console},
+      LogEnvironment.profile: {LogTarget.console},
+      LogEnvironment.release: {LogTarget.file},
+    },
     allowUnregisteredModules: false,
+    strictMode: true,
+  );
+
+  final moduleConfig = LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.info,
+    enableColors: true,
+    modules: {
+      'ValidatedService': const LogModuleConfig(
+        type: ModuleType.service,
+        enabled: true,
+      ),
+    },
+  );
+
+  final config = LogConfig(
+    coreConfig: coreConfig,
+    moduleConfig: moduleConfig,
   );
 
   LoggerImpl.initialize(config);
@@ -175,11 +222,7 @@ void example4StrictModeConfiguration() {
     ),
   );
 
-  try {
-    logger.info(() => 'This will be filtered (unregistered in strict mode)');
-  } catch (e) {
-    print('Expected behavior: $e');
-  }
+  logger.info(() => 'This is logged (registered in strict mode)');
 
   LoggerImpl.dispose();
   print('✓ Strict mode completed\n');
@@ -191,15 +234,24 @@ void example5MemoryBufferUsage() {
 
   final coreConfig = LoggerCoreConfig(
     environment: LogEnvironment.development,
-    environmentLevels: {LogEnvironment.development: LogLevel.debug},
-    targetsPerEnvironment: {
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.debug,
+      LogEnvironment.profile: LogLevel.debug,
+      LogEnvironment.release: LogLevel.warning,
+    },
+    targetsPerEnvironment: const {
       LogEnvironment.development: {LogTarget.console, LogTarget.memory},
+      LogEnvironment.profile: {LogTarget.console, LogTarget.file},
+      LogEnvironment.release: {LogTarget.file},
     },
     allowUnregisteredModules: true,
+    strictMode: false,
   );
 
-  final moduleConfig = LoggerModuleRegistryConfig.minimal(
+  final moduleConfig = LoggerModuleRegistryConfig(
     globalLevel: LogLevel.debug,
+    enableColors: true,
+    modules: const {},
   );
 
   final config = LogConfig(coreConfig: coreConfig, moduleConfig: moduleConfig);
@@ -234,7 +286,33 @@ void example5MemoryBufferUsage() {
 void demonstrateUsageInServices() {
   print('=== Service Integration Examples ===\n');
 
-  final config = LogConfig.recommended();
+  final coreConfig = LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.debug,
+      LogEnvironment.profile: LogLevel.info,
+      LogEnvironment.release: LogLevel.warning,
+    },
+    targetsPerEnvironment: const {
+      LogEnvironment.development: {LogTarget.console},
+      LogEnvironment.profile: {LogTarget.console},
+      LogEnvironment.release: {LogTarget.file},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
+  );
+
+  final moduleConfig = LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.info,
+    enableColors: true,
+    modules: const {},
+  );
+
+  final config = LogConfig(
+    coreConfig: coreConfig,
+    moduleConfig: moduleConfig,
+  );
+
   LoggerImpl.initialize(config);
 
   final authService = MockAuthService();

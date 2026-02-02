@@ -28,7 +28,12 @@ void main() {
   
   LoggerImpl.initialize(config);
   
-  final logger = LoggerImpl.forModule(const LogModule(name: 'App'));
+  final logger = LoggerImpl.forModule(
+    const LogModule(
+      moduleName: 'App',
+      moduleType: ModuleType.service,
+    ),
+  );
   
   logger.debug(() => 'Debug message');
   logger.info(() => 'Info message');

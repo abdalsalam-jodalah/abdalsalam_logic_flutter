@@ -114,34 +114,25 @@ class NetworkClient {
 }
 
 void demonstrateBasicLogging() {
-  final config = LogConfig(
-    developmentConfig: const EnvironmentLogConfig(
-      globalLevel: LogLevel.trace,
-      enableColors: true,
-      outputs: [ConsoleOutput()],
-      allowUnregisteredModules: true,
-    ),
-    profileConfig: const EnvironmentLogConfig(
-      globalLevel: LogLevel.debug,
-      enableColors: true,
-      outputs: [ConsoleOutput()],
-      allowUnregisteredModules: true,
-    ),
-    releaseConfig: EnvironmentLogConfig(
-      globalLevel: LogLevel.error,
-      enableColors: false,
-      outputs: [
-        FileOutput(
-          fileName: 'app_logs.txt',
-          maxFileSizeBytes: 5 * 1024 * 1024,
-        ),
-        RemoteOutput(
-          endpoint: 'https://api.example.com/logs',
-          allowedLevels: {'ERROR', 'FATAL'},
-        ),
-      ],
-      allowUnregisteredModules: false,
-    ),
+  final coreConfig = LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.trace,
+      LogEnvironment.profile: LogLevel.debug,
+      LogEnvironment.release: LogLevel.error,
+    },
+    targetsPerEnvironment: const {
+      LogEnvironment.development: {LogTarget.console},
+      LogEnvironment.profile: {LogTarget.console},
+      LogEnvironment.release: {LogTarget.file},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
+  );
+
+  final moduleConfig = LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.debug,
+    enableColors: true,
     modules: {
       'AuthService': const LogModuleConfig(
         type: ModuleType.authentication,
@@ -161,6 +152,11 @@ void demonstrateBasicLogging() {
     },
   );
 
+  final config = LogConfig(
+    coreConfig: coreConfig,
+    moduleConfig: moduleConfig,
+  );
+
   LoggerImpl.initialize(config);
 
   final authService = AuthService();
@@ -177,81 +173,91 @@ void demonstrateBasicLogging() {
 }
 
 void demonstrateMultipleOutputs() {
+  final coreConfig = LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.debug,
+      LogEnvironment.profile: LogLevel.debug,
+      LogEnvironment.release: LogLevel.error,
+    },
+    targetsPerEnvironment: const {
+      LogEnvironment.development: {LogTarget.console, LogTarget.file},
+      LogEnvironment.profile: {LogTarget.console, LogTarget.file},
+      LogEnvironment.release: {LogTarget.file},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
+  );
+
+  final moduleConfig = LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.debug,
+    enableColors: true,
+    modules: const {},
+  );
+
   final config = LogConfig(
-    developmentConfig: EnvironmentLogConfig(
-      globalLevel: LogLevel.debug,
-      enableColors: true,
-      outputs: [
-        const ConsoleOutput(),
-        FileOutput(
-          fileName: 'dev_logs.txt',
-          maxFileSizeBytes: 10 * 1024 * 1024,
-          maxBackupFiles: 3,
-        ),
-      ],
-      allowUnregisteredModules: true,
-    ),
-    releaseConfig: EnvironmentLogConfig(
-      globalLevel: LogLevel.error,
-      enableColors: false,
-      outputs: [
-        FileOutput(
-          fileName: 'production_logs.txt',
-          maxFileSizeBytes: 20 * 1024 * 1024,
-          maxBackupFiles: 10,
-        ),
-        RemoteOutput(
-          endpoint: 'https://crashreports.example.com/api/logs',
-          headers: {'Authorization': 'Bearer your-token-here'},
-          batchInterval: Duration(seconds: 60),
-          maxBatchSize: 50,
-          allowedLevels: {'ERROR', 'FATAL'},
-        ),
-      ],
-      allowUnregisteredModules: false,
-    ),
+    coreConfig: coreConfig,
+    moduleConfig: moduleConfig,
   );
 
   LoggerImpl.initialize(config);
 }
 
 void demonstrateModuleTypeFiltering() {
+  final coreConfig = LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.debug,
+      LogEnvironment.profile: LogLevel.debug,
+      LogEnvironment.release: LogLevel.warning,
+    },
+    targetsPerEnvironment: const {
+      LogEnvironment.development: {LogTarget.console},
+      LogEnvironment.profile: {LogTarget.console},
+      LogEnvironment.release: {LogTarget.console},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
+  );
+
+  final moduleConfig = LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.debug,
+    enableColors: true,
+    modules: const {},
+    disabledModuleTypes: {
+      ModuleType.view,
+      ModuleType.analytics,
+    },
+  );
+
   final config = LogConfig(
-    developmentConfig: const EnvironmentLogConfig(
-      globalLevel: LogLevel.debug,
-      enableColors: true,
-      outputs: [ConsoleOutput()],
-      allowUnregisteredModules: true,
-      disabledModuleTypes: {
-        ModuleType.view,
-        ModuleType.analytics,
-      },
-    ),
-    releaseConfig: const EnvironmentLogConfig(
-      globalLevel: LogLevel.warning,
-      enableColors: false,
-      outputs: [ConsoleOutput()],
-      allowUnregisteredModules: false,
-      disabledModuleTypes: {
-        ModuleType.view,
-        ModuleType.viewModel,
-        ModuleType.analytics,
-        ModuleType.cache,
-      },
-    ),
+    coreConfig: coreConfig,
+    moduleConfig: moduleConfig,
   );
 
   LoggerImpl.initialize(config);
 }
 
 void demonstrateStrictMode() {
-  final config = LogConfig(
-    developmentConfig: const EnvironmentLogConfig(
-      globalLevel: LogLevel.info,
-      enableColors: true,
-      outputs: [ConsoleOutput()],
-      allowUnregisteredModules: false,
-    ),
+  final coreConfig = LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.info,
+      LogEnvironment.profile: LogLevel.debug,
+      LogEnvironment.release: LogLevel.error,
+    },
+    targetsPerEnvironment: const {
+      LogEnvironment.development: {LogTarget.console},
+      LogEnvironment.profile: {LogTarget.console},
+      LogEnvironment.release: {LogTarget.file},
+    },
+    allowUnregisteredModules: false,
+    strictMode: false,
+  );
+
+  final moduleConfig = LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.info,
+    enableColors: true,
     modules: {
       'AuthService': const LogModuleConfig(
         type: ModuleType.authentication,
@@ -266,41 +272,70 @@ void demonstrateStrictMode() {
     },
   );
 
+  final config = LogConfig(
+    coreConfig: coreConfig,
+    moduleConfig: moduleConfig,
+  );
+
   LoggerImpl.initialize(config);
 }
 
 void demonstrateLevelFiltering() {
+  final coreConfig = LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.trace,
+      LogEnvironment.profile: LogLevel.debug,
+      LogEnvironment.release: LogLevel.error,
+    },
+    targetsPerEnvironment: const {
+      LogEnvironment.development: {LogTarget.console},
+      LogEnvironment.profile: {LogTarget.console},
+      LogEnvironment.release: {LogTarget.console},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
+  );
+
+  final moduleConfig = LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.trace,
+    enableColors: true,
+    modules: const {},
+    disabledLevels: {
+      LogLevel.trace,
+      LogLevel.debug,
+      LogLevel.info,
+    },
+  );
+
   final config = LogConfig(
-    developmentConfig: const EnvironmentLogConfig(
-      globalLevel: LogLevel.trace,
-      enableColors: true,
-      outputs: [ConsoleOutput()],
-      allowUnregisteredModules: true,
-    ),
-    releaseConfig: const EnvironmentLogConfig(
-      globalLevel: LogLevel.error,
-      enableColors: false,
-      outputs: [ConsoleOutput()],
-      allowUnregisteredModules: false,
-      disabledLevels: {
-        LogLevel.trace,
-        LogLevel.debug,
-        LogLevel.info,
-      },
-    ),
+    coreConfig: coreConfig,
+    moduleConfig: moduleConfig,
   );
 
   LoggerImpl.initialize(config);
 }
 
 void demonstrateComprehensiveModuleTypes() {
-  final config = LogConfig(
-    developmentConfig: const EnvironmentLogConfig(
-      globalLevel: LogLevel.debug,
-      enableColors: true,
-      outputs: [ConsoleOutput()],
-      allowUnregisteredModules: true,
-    ),
+  final coreConfig = LoggerCoreConfig(
+    environment: LogEnvironment.development,
+    environmentLevels: const {
+      LogEnvironment.development: LogLevel.debug,
+      LogEnvironment.profile: LogLevel.debug,
+      LogEnvironment.release: LogLevel.error,
+    },
+    targetsPerEnvironment: const {
+      LogEnvironment.development: {LogTarget.console},
+      LogEnvironment.profile: {LogTarget.console},
+      LogEnvironment.release: {LogTarget.file},
+    },
+    allowUnregisteredModules: true,
+    strictMode: false,
+  );
+
+  final moduleConfig = LoggerModuleRegistryConfig(
+    globalLevel: LogLevel.debug,
+    enableColors: true,
     modules: {
       'AuthService': const LogModuleConfig(
         type: ModuleType.authentication,
@@ -382,6 +417,11 @@ void demonstrateComprehensiveModuleTypes() {
         enabled: true,
       ),
     },
+  );
+
+  final config = LogConfig(
+    coreConfig: coreConfig,
+    moduleConfig: moduleConfig,
   );
 
   LoggerImpl.initialize(config);
