@@ -5,6 +5,9 @@ export 'src/core/errors/error_handler_impl.dart';
 export 'src/core/interfaces/repository_interface.dart';
 export 'src/core/interfaces/service_interface.dart';
 
+// Error Logging
+export 'src/error_logging/runtime_error_overlay.dart';
+
 export 'src/logging/logger.dart';
 export 'src/logging/logger_impl.dart';
 export 'src/logging/log_config.dart';

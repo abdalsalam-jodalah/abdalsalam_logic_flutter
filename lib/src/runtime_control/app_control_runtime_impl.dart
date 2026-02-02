@@ -2,6 +2,7 @@
 // Implementation of the application runtime control system
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'app_control_runtime.dart';
 import 'domain_registry.dart';
@@ -42,10 +43,19 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   
   @override
   Future<void> start() async {
-    if (_isStarted) {
-      throw RuntimeException('Runtime already started');
+    // Handle already started case gracefully
+    if (_isStarted && _currentPhase == LifecyclePhase.running) {
+      debugPrint('Runtime already running, skipping start');
+      _emitEvent(RuntimeEvent.started()); // Emit event anyway
+      return;
     }
     
+    // Reset if in disposed state
+    if (_currentPhase == LifecyclePhase.disposed) {
+      _currentPhase = LifecyclePhase.uninitialized;
+      _isStarted = false;
+    }
+
     await _transitionTo(LifecyclePhase.initializing);
     _emitEvent(RuntimeEvent.starting());
     
@@ -256,7 +266,9 @@ class AppControlRuntimeImpl implements AppControlRuntime {
       _isStarted = false;
       _emitEvent(RuntimeEvent.stopped());
       
-      // Don't close streams - allow restart
+      // Don't close streams - keep them open for restart
+      // _phaseStream.close();
+      // _eventStream.close();
     } catch (e) {
       await _transitionTo(LifecyclePhase.error);
       _emitEvent(RuntimeEvent.error('Failed to stop runtime', e));
@@ -283,7 +295,16 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   Future<void> _transitionTo(LifecyclePhase newPhase) async {
     _validateTransition(_currentPhase, newPhase);
     _currentPhase = newPhase;
-    _phaseStream.add(newPhase);
+    
+    // Safely add to phase stream
+    try {
+      if (!_phaseStream.isClosed) {
+        _phaseStream.add(newPhase);
+      }
+    } catch (e) {
+      debugPrint('Error adding to phase stream: $e');
+    }
+    
     _emitEvent(RuntimeEvent.phaseChange(newPhase));
   }
   
@@ -294,7 +315,13 @@ class AppControlRuntimeImpl implements AppControlRuntime {
   }
   
   void _emitEvent(RuntimeEvent event) {
-    _eventStream.add(event);
+    try {
+      if (!_eventStream.isClosed) {
+        _eventStream.add(event);
+      }
+    } catch (e) {
+      debugPrint('Error emitting event: $e');
+    }
   }
   
   @override

@@ -222,17 +222,25 @@ class UITreeController {
   }
   
   Future<void> _performCompleteRebuild() async {
-    // Mark all render objects dirty
-    if (RendererBinding.instance.renderView.child != null) {
-      RendererBinding.instance.renderView.child!.markNeedsLayout();
-      RendererBinding.instance.renderView.child!.markNeedsPaint();
+    try {
+      // Use reassembleApplication instead of scheduleBuildFor
+      await WidgetsBinding.instance.reassembleApplication();
+      
+      // Ensure visual update
+      WidgetsBinding.instance.ensureVisualUpdate();
+      
+      // Schedule a frame if needed
+      if (!WidgetsBinding.instance.hasScheduledFrame) {
+        WidgetsBinding.instance.scheduleFrame();
+      }
+      
+      await WidgetsBinding.instance.endOfFrame;
+    } catch (e) {
+      debugPrint('Error in complete rebuild: $e');
+      // Fallback to simple refresh
+      WidgetsBinding.instance.ensureVisualUpdate();
+      WidgetsBinding.instance.scheduleFrame();
     }
-    
-    // Schedule rebuild
-    WidgetsBinding.instance.buildOwner!.scheduleBuildFor(WidgetsBinding.instance.rootElement!);
-    WidgetsBinding.instance.ensureVisualUpdate();
-    
-    await WidgetsBinding.instance.endOfFrame;
   }
   
   Future<void> _clearNavigationStacks() async {

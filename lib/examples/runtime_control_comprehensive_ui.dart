@@ -3,6 +3,11 @@
 import 'dart:async';
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 import 'package:flutter/material.dart';
+import '../src/runtime_control/domains/auth_runtime_domain.dart';
+import '../src/runtime_control/domains/storage_runtime_domain.dart';
+import '../src/runtime_control/domains/network_runtime_domain.dart';
+import '../src/runtime_control/domains/memory_runtime_domain.dart';
+import '../src/runtime_control/domains/service_registry_runtime_domain.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,13 +15,11 @@ void main() async {
   AppControl.initialize(config: const RuntimeConfig.development());
   
   AppControl.registerDomains([
-    LoggingDomain(),
-    StorageDomain(),
-    NetworkingDomain(),
-    AuthDomain(),
-    AppStateDomain(),
-    CacheDomain(),
-    SyncDomain(),
+    ServiceRegistryRuntimeDomain(),
+    MemoryRuntimeDomain(),
+    AuthRuntimeDomain(),
+    StorageRuntimeDomain(), 
+    NetworkRuntimeDomain(),
   ]);
   
   await AppControl.start();
@@ -29,14 +32,16 @@ class RuntimeControlDemoApp extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Runtime Control Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
+    return RuntimeErrorOverlay.wrapApp(
+      MaterialApp(
+        title: 'Runtime Control Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: true,
+        ),
+        darkTheme: ThemeData.dark(useMaterial3: true),
+        home: const RuntimeControlHomePage(),
       ),
-      darkTheme: ThemeData.dark(useMaterial3: true),
-      home: const RuntimeControlHomePage(),
     );
   }
 }
@@ -55,12 +60,47 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
   StreamSubscription<RuntimeEvent>? _runtimeEventSub;
   StreamSubscription<StateEvent>? _stateEventSub;
   StreamSubscription<UITreeEvent>? _uiEventSub;
-  
+  final List<String> _runtimeErrors = [];
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this); // Added one more tab for errors
     _listenToEvents();
+    _setupErrorCapture();
+  }
+
+  void _setupErrorCapture() {
+    // Capture runtime errors specifically
+    FlutterError.onError = (FlutterErrorDetails details) {
+      final errorMsg = 'Flutter Error: ${details.exception}';
+      print('🔥 RUNTIME ERROR: $errorMsg');
+      debugPrint('Stack trace: ${details.stack}');
+      _addRuntimeError(errorMsg);
+    };
+
+    // Override the default error handler to also log to our system
+    final originalOnError = FlutterError.onError;
+    FlutterError.onError = (FlutterErrorDetails details) {
+      originalOnError?.call(details);
+      final errorMsg = 'Flutter: ${details.exception.toString()}';
+      print('🔥 FLUTTER ERROR: $errorMsg');
+      debugPrint('Full details: ${details.toString()}');
+      _addRuntimeError(errorMsg);
+    };
+  }
+
+  void _addRuntimeError(String error) {
+    print('📱 RUNTIME ERROR LOGGED: $error');
+    if (mounted) {
+      setState(() {
+        _runtimeErrors.insert(0, '[${_formatTime(DateTime.now())}] $error');
+        if (_runtimeErrors.length > 50) _runtimeErrors.removeLast();
+      });
+      _eventLog.insert(0, '❌ ERROR: $error');
+      if (_eventLog.length > 100) _eventLog.removeLast();
+      _scrollToTop();
+    }
   }
   
   void _listenToEvents() {
@@ -126,6 +166,7 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
             Tab(icon: Icon(Icons.control_camera), text: 'Controls'),
             Tab(icon: Icon(Icons.account_tree), text: 'Domains'),
             Tab(icon: Icon(Icons.event_note), text: 'Events'),
+            Tab(icon: Icon(Icons.error), text: 'Errors'),
             Tab(icon: Icon(Icons.settings), text: 'Settings'),
           ],
         ),
@@ -137,6 +178,7 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
           _buildControlsTab(),
           _buildDomainsTab(),
           _buildEventsTab(context),
+          _buildErrorsTab(context),
           _buildSettingsTab(),
         ],
       ),
@@ -925,6 +967,137 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
       ],
     );
   }
+
+  Widget _buildErrorsTab(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            border: Border(bottom: BorderSide(color: Colors.red.shade200)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.error, color: Colors.red.shade700),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Runtime Errors Log',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade700,
+                      ),
+                    ),
+                    Text(
+                      '${_runtimeErrors.length} errors captured',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _runtimeErrors.clear();
+                  });
+                },
+                icon: Icon(Icons.clear_all, color: Colors.red.shade700),
+                tooltip: 'Clear all errors',
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _runtimeErrors.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        size: 64,
+                        color: Colors.green.shade400,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No Runtime Errors',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'All operations are running smoothly',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.green.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _runtimeErrors.length,
+                  itemBuilder: (context, index) {
+                    final error = _runtimeErrors[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Card(
+                        color: Colors.red.shade50,
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.error_outline,
+                            color: Colors.red.shade700,
+                          ),
+                          title: Text(
+                            error,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                              color: Colors.red.shade800,
+                            ),
+                          ),
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Error Details'),
+                                content: SelectableText(
+                                  error,
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Close'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
   
   Widget _buildSettingsTab() {
     return ListView(
@@ -1089,6 +1262,48 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
   
   Future<void> _executeAction(String actionName, Future<void> Function() action) async {
     try {
+      // Log start of action
+      _eventLog.insert(0, '[${_formatTime(DateTime.now())}] ▶️ Starting: $actionName');
+      if (_eventLog.length > 100) _eventLog.removeLast();
+      _scrollToTop();
+      
+      // Smart recovery: handle different states properly
+      if (actionName != 'Start' && actionName != 'Stop') {
+        final currentPhase = AppControl.currentPhase;
+        
+        if (currentPhase == LifecyclePhase.uninitialized) {
+          print('🔄 Auto-starting runtime for $actionName');
+          await AppControl.start();
+        } else if (currentPhase == LifecyclePhase.disposed) {
+          print('🔄 Resetting from disposed state for $actionName');
+          // Reset and reinitialize
+          AppControl.reset();
+          AppControl.initialize(config: const RuntimeConfig.development());
+          AppControl.registerDomains([
+            ServiceRegistryRuntimeDomain(),
+            MemoryRuntimeDomain(), 
+            AuthRuntimeDomain(),
+            StorageRuntimeDomain(),
+            NetworkRuntimeDomain(),
+          ]);
+          await AppControl.start();
+        } else if (currentPhase == LifecyclePhase.error) {
+          print('🔄 Recovering from error state for $actionName');
+          // Reset from error state
+          AppControl.reset();
+          AppControl.initialize(config: const RuntimeConfig.development());
+          AppControl.registerDomains([
+            ServiceRegistryRuntimeDomain(),
+            MemoryRuntimeDomain(),
+            AuthRuntimeDomain(),
+            StorageRuntimeDomain(),
+            NetworkRuntimeDomain(),
+          ]);
+          await AppControl.start();
+        }
+        // If running/paused/etc, continue normally
+      }
+      
       await action();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1100,12 +1315,45 @@ class _RuntimeControlHomePageState extends State<RuntimeControlHomePage> with Si
         );
       }
     } catch (e) {
+      debugPrint('Action $actionName failed: $e');
+      print('🚨 ACTION FAILED: $actionName - Error: $e');
+      
+      // Log error to our error system
+      _addRuntimeError('$actionName failed: $e');
+      
+      // Auto-recovery attempt for common errors
+      if (e.toString().contains('before start() is called') || 
+          e.toString().contains('runtime not started')) {
+        try {
+          debugPrint('Attempting auto-recovery by starting runtime...');
+          // Only start if not already started
+          if (AppControl.currentPhase == LifecyclePhase.uninitialized) {
+            await AppControl.start();
+            // Retry the operation
+            await action();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('✓ $actionName completed after recovery'),
+                  backgroundColor: Colors.orange,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+            return;
+          }
+        } catch (recoveryError) {
+          debugPrint('Recovery failed: $recoveryError');
+          _addRuntimeError('Recovery failed for $actionName: $recoveryError');
+        }
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✗ $actionName failed: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
           ),
         );
       }

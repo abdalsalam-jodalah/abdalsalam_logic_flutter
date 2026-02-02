@@ -77,7 +77,7 @@ extension LifecyclePhaseExtension on LifecyclePhase {
       case LifecyclePhase.disposing:
         return {LifecyclePhase.disposed, LifecyclePhase.error};
       case LifecyclePhase.disposed:
-        return {LifecyclePhase.uninitialized}; // Allow re-initialization
+        return {LifecyclePhase.uninitialized, LifecyclePhase.initializing}; // Allow direct restart
       case LifecyclePhase.error:
         return {
           LifecyclePhase.uninitialized, 
