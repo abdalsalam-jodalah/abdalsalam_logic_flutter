@@ -181,6 +181,6 @@ Contributions are welcome! Please read the [contributing guidelines](CONTRIBUTIN
 
 ## 📞 Support
 
-- 🐛 [Report Issues](https://github.com/AbdAlmalik/abdalsalam_logic_flutter/issues)
-- 💬 [Discussions](https://github.com/AbdAlmalik/abdalsalam_logic_flutter/discussions)
+- 🐛 [Report Issues](https://github.com/abdalsalam-jodalah/abdalsalam_logic_flutter/issues)
+- 💬 [Discussions](https://github.com/abdalsalam-jodalah/abdalsalam_logic_flutter/discussions)
 - 📧 Email: abed.alsalam.jodalah@gmail.com
