@@ -1,864 +1,186 @@
 # abdalsalam_logic_flutter
 
-A comprehensive Flutter logic package providing reusable modules for app state, networking, storage, authentication, and more. Built following SOLID principles and modern Flutter best practices.
+[![pub package](https://img.shields.io/pub/v/abdalsalam_logic_flutter.svg)](https://pub.dev/packages/abdalsalam_logic_flutter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+A comprehensive Flutter logic package providing 20+ reusable modules for app state management, networking, storage, authentication, and more. Built following SOLID principles with modular, opt-in architecture.
 
-- **App State Management** - Comprehensive, modular state tracking with 21+ domains
-  - **Modular & Opt-In Architecture** - Only initialize features you need
-  - App Lifecycle, Connectivity, Device Info
-  - WiFi & Mobile Data tracking with real device data
-  - Battery, Storage, Memory monitoring
-  - Audio, Orientation, Screen Metrics
-  - Permissions (25+ types), System Settings, Accessibility
-  - Navigation, Theme, Locale management
-  - [📖 Complete App State Guide](docs/APP_STATE_GUIDE.md)
-  - [🏗️ Modular Architecture Guide](docs/MODULAR_ARCHITECTURE.md)
-- **Runtime Control** - Dynamic app control and domain management system
-  - **User-Controlled Domains** - Define your own runtime domains without hardcoded dependencies
-  - **UI Tree Control** - Real-time UI refresh, rebuild, and recreation
-  - **App Restart** - Native app restart functionality (Android/iOS)
-  - **Dynamic Registration** - Register domains with custom priorities and dependencies
-  - **Validation System** - Comprehensive domain validation and consistency checks
-  - **Event Streaming** - Real-time runtime events and state changes
-  - [📖 Runtime Control Documentation](docs/RUNTIME_CONTROL.md)
-- **App Initialization** - Structured app initialization with service orchestration
-- **API & Networking** - HTTP client with interceptors, error handling, and token management
-- **Logging** - Comprehensive logging service with multiple log levels
-- **Error Handling** - Centralized error handling with custom exception types
-- **Update Manager** - App version checking and update management
-- **Storage** - Multiple storage options:
-  - SharedPreferences (key-value storage)
-  - SQLite (relational database)
-  - Hive (NoSQL database)
-- **Authentication** - Firebase Auth integration with token management
-- **Role Management** - User role assignment and permission checking
-- **Prefetch Manager** - Data prefetching and caching
-- **FCM** - Firebase Cloud Messaging integration
-- **File Operations** - Complete file system operations
-- **Share** - Share text and files
-- **Calendar** - Calendar event management
-- **Contacts** - Contact management and operations
+## ✨ Key Features
 
-## Getting Started
+### 📱 **Smart App State (21+ Domains)**
+- Real-time device monitoring (battery, connectivity, storage)
+- Responsive breakpoint detection & platform awareness
+- Modular architecture - only bundle what you enable
 
-### Prerequisites
+### 🌐 **Networking & Storage**
+- Offline-first HTTP client with intelligent caching
+- Unified storage gateway (SQLite + Hive + SharedPreferences)
+- Automatic data synchronization and conflict resolution
 
-- Flutter SDK >= 3.10.1
-- Dart SDK >= 3.10.1
+### 🔐 **Authentication & Security**
+- Firebase Auth integration with token management
+- User isolation for all data operations
+- Role-based permissions and access control
+
+### 🎮 **Runtime Control**
+- Native app restart functionality
+- Custom domain registration system
+- Dynamic UI tree management (refresh, rebuild, recreate)
+
+### 🛠️ **Developer Tools**
+- Structured logging with caller tracking
+- Centralized error handling and classification
+- Comprehensive file operations and sharing
+
+### 📱 **Platform Integration**
+- Calendar and contacts native access
+- Firebase Cloud Messaging (FCM)
+- Cross-platform utilities (Android, iOS, Web, Desktop)
+
+## 🚀 Quick Start
 
 ### Installation
 
-Add this package to your `pubspec.yaml`:
+Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  abdalsalam_logic_flutter:
-    path: ../abdalsalam_logic_flutter  # or use git/version
+  abdalsalam_logic_flutter: ^1.0.0
 ```
 
-Then run:
+Run:
 
 ```bash
 flutter pub get
 ```
 
-### Firebase Setup
+## 💻 Usage
 
-For authentication and FCM features, ensure Firebase is properly configured:
-
-1. Add `firebase_core` to your app
-2. Initialize Firebase in your app's main function
-3. Configure Firebase for your platform (iOS/Android)
-
-## Usage
-
-### Basic Setup
+### Quick Setup
 
 ```dart
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 
-// Initialize services
-final logger = LoggerServiceImpl();
-final storage = SharedPreferencesStorage(logger);
-final apiClient = ApiClientImpl(logger);
-final authService = AuthServiceImpl(logger, storage);
-final appStateManager = AppStateManagerImpl(logger);
-
-// Initialize app
-final appInitializer = AppInitializerImpl(
-  appStateManager,
-  logger,
-  storage,
-  apiClient,
-  authService,
-  FcmServiceImpl(logger),
-);
-
-await appInitializer.initialize();
-```
-
-### App State Management
-
-The `AppStateManager` provides comprehensive, modular state management with **21+ state domains**. It follows a **zero-impact, opt-in architecture** where you only initialize features you need.
-
-#### 🎯 Key Principles
-
-- **Modular**: Enable only the features you need via `AppStateConfig`
-- **Zero Impact**: Disabled features add no code/dependencies to your bundle
-- **Reactive**: All state changes broadcast via streams
-- **Real Device Data**: Uses actual platform data (not mocks)
-- **Manual Refresh**: Pull latest data on-demand
-
-#### 🚀 Quick Start
-
-```dart
-import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
-
-// 1. Create custom configuration (opt-in features)
+// Configure only the features you need (zero-impact bundling)
 final config = AppStateConfig(
-  // Core features
-  enableAppLifecycle: true,
-  enableDeviceInfo: true,
   enableConnectivity: true,
-  
-  // Network details
-  enableWiFi: true,
-  enableMobileData: true,
-  
-  // Device state
+  enableDeviceInfo: true,
   enableBattery: true,
-  enableStorage: true,
-  enableOrientation: true,
-  
-  // Permissions
-  enablePermissions: true,
-  
-  // App metadata
-  enableAppVersion: true,
-  
-  // Skip unused features
-  enableMemory: false,
-  enableAudio: false,
-  enableVPN: false,
-  // ... etc
 );
 
-// 2. Initialize with logger
-final logger = LoggerServiceImpl();
-final appStateManager = AppStateManagerImpl.create(logger, config: config);
-await appStateManager.initialize();
-
-// 3. Use in your app
-runApp(MyApp(appStateManager: appStateManager));
-```
-
-#### 📊 State Domains Available
-
-| Domain | Description | Key Data |
-|--------|-------------|----------|
-| **App Lifecycle** | Foreground/background, online/offline | States, focus, connectivity |
-| **Device Info** | Device type, OS, screen size | Phone/tablet/desktop, breakpoints |
-| **Connectivity** | Network connection status | Online/offline |
-| **WiFi Info** | WiFi connection details | SSID, IP, signal, speed, frequency |
-| **Mobile Data** | Cellular connection tracking | 2G/3G/4G/5G, signal, operator |
-| **VPN Info** | VPN connection detection | Connection status |
-| **Battery Info** | Battery monitoring with live updates | Level, state, health, temperature |
-| **Storage Info** | Device storage tracking | Total, free, used, percentage |
-| **Memory Info** | System memory & pressure | Total, free, used (live), pressure level |
-| **Audio State** | Volume monitoring | Level, output type, mute status |
-| **Orientation** | Screen orientation | Portrait/landscape |
-| **Screen Metrics** | Display measurements | Pixel ratio, DPI, safe areas |
-| **App Version** | Version & build info | Version, build number, package |
-| **App Runtime** | Running duration | Uptime tracking |
-| **System Settings** | System-level settings | Dark mode, low power, airplane |
-| **Permissions** | 25+ permission types | Camera, location, contacts, etc. |
-| **Keyboard** | Keyboard visibility & height | Visible state, height |
-| **Network Type** | Network connection type | WiFi, mobile, ethernet |
-| **Accessibility** | Accessibility features | Screen reader, bold text, reduce motion |
-| **Navigation** | Route & tab tracking | Current route, history, params |
-| **Theme & Locale** | Theme mode & language | Dark/light mode, locale, RTL |
-
-#### 📖 Documentation
-
-- **[Complete App State Guide](docs/APP_STATE_GUIDE.md)** - Detailed usage for all 21 domains
-- **[Modular Architecture Guide](docs/MODULAR_ARCHITECTURE.md)** - Design principles & patterns
-- **[Example App](example/)** - Working demo with all features
-
-#### ⚡ Common Use Cases
-
-**1. Network-aware sync:**
-```dart
-appStateManager.stateStream.listen((state) {
-  if (state.isOnline && state.isForeground) {
-    syncData();
-  }
-});
-```
-
-**2. Responsive UI:**
-```dart
-final device = appStateManager.deviceInfo;
-if (device.isTablet || device.breakpoint.index >= ResponsiveBreakpoint.lg.index) {
-  // Desktop/tablet layout
-} else {
-  // Mobile layout
-}
-```
-
-**3. Battery optimization:**
-```dart
-appStateManager.batteryStream.listen((battery) {
-  if (battery.isLowBattery) {
-    disableBackgroundSync();
-  }
-});
-```
-
-**4. WiFi vs Mobile Data:**
-```dart
-final wifi = appStateManager.wifiInfo;
-final mobile = appStateManager.mobileDataInfo;
-
-if (wifi.isConnected) {
-  // High-quality streaming on WiFi
-  setQuality(VideoQuality.high);
-} else if (mobile.isConnected) {
-  // Lower quality on mobile data
-  setQuality(VideoQuality.standard);
-}
-```
-
-**5. Manual refresh:**
-```dart
-// Refresh all enabled features
-await appStateManager.refreshAll();
-
-// Or refresh specific domains
-await appStateManager.refreshWiFi();
-await appStateManager.refreshBattery();
-```
-
-#### 📦 Required Dependencies
-
-Only add dependencies for features you enable:
-
-```yaml
-dependencies:
-  # Core (if using app state)
-  connectivity_plus: ^5.0.2
-  device_info_plus: ^9.1.1
-  
-  # Optional (based on your AppStateConfig)
-  battery_plus: ^5.0.2              # if enableBattery
-  network_info_plus: ^5.0.1         # if enableWiFi or enableMobileData
-  disk_space_plus: ^0.2.2           # if enableStorage
-  volume_controller: ^2.0.7         # if enableAudio
-  permission_handler: ^12.0.1       # if enablePermissions
-  package_info_plus: ^5.0.1         # if enableAppVersion
-```
-
-See [Installation Guide](docs/APP_STATE_GUIDE.md#installation) for platform-specific setup.
-
----
-
-### Runtime Control System
-
-The Runtime Control system provides comprehensive app control with user-defined domain architectures.
-
-#### Key Features
-
-- **100% User-Controlled**: Define your own domains without hardcoded dependencies
-- **Dynamic Registration**: Register domains with custom initialization order and dependencies  
-- **Real App Restart**: Native restart functionality using platform-specific APIs
-- **UI Tree Management**: Refresh, rebuild, or recreate entire UI trees
-- **Validation & Safety**: Comprehensive validation prevents common domain registration errors
-
-#### Quick Start
-
-```dart
-import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
-
-// 1. Create your custom domains
-class GameEngineDomain implements RuntimeDomain {
-  @override
-  String get domainId => 'game_engine';
-  @override
-  String get domainName => 'Game Engine Core';
-  @override
-  int get initializationPriority => 100;
-  @override
-  List<String> get dependencies => [];
-  
-  @override
-  Future<void> initialize() async {
-    // Your initialization logic
-  }
-  
-  @override
-  Future<void> reset(ResetLevel level) async {
-    // Your reset logic
-  }
-  
-  // ... other required methods
-}
-
-// 2. Register domains dynamically
-final registry = DomainRegistry();
-registry.register(GameEngineDomain());
-registry.register(PlayerProgressDomain()); // depends on game_engine
-
-// 3. Get initialization order (automatically sorted by dependencies)
-final initOrder = registry.getInitializationOrder();
-
-// 4. Use app control for runtime operations
-final appControl = AppControl.instance;
-
-// Restart app (native platform restart)
-await appControl.restartApp();
-
-// UI tree operations  
-await appControl.refreshUI();
-await appControl.rebuildAllTrees();
-await appControl.recreateAllTrees();
-```
-
-#### Domain Architecture Examples
-
-The system supports any domain architecture you define:
-
-**Game Development:**
-```dart
-// User defines game-specific domains
-final gameDomains = [
-  GameEngineDomain(),           // Priority: 100, Dependencies: []
-  AudioDomain(),               // Priority: 90,  Dependencies: []  
-  GraphicsDomain(),           // Priority: 95,  Dependencies: [game_engine]
-  PlayerProgressDomain(),     // Priority: 80,  Dependencies: [game_engine]
-  LeaderboardDomain(),       // Priority: 70,  Dependencies: [player_progress]
-];
-```
-
-**E-commerce Platform:**
-```dart
-// User defines commerce-specific domains  
-final commerceDomains = [
-  ProductCatalogDomain(),     // Priority: 90,  Dependencies: []
-  InventoryDomain(),         // Priority: 95,  Dependencies: []
-  ShoppingCartDomain(),      // Priority: 80,  Dependencies: [product_catalog] 
-  PaymentProcessorDomain(),  // Priority: 85,  Dependencies: []
-  CheckoutDomain(),          // Priority: 70,  Dependencies: [shopping_cart, payment]
-];
-```
-
-**Social Media App:**
-```dart
-// User defines social-specific domains
-final socialDomains = [
-  UserProfileDomain(),       // Priority: 100, Dependencies: []
-  PostFeedDomain(),         // Priority: 90,  Dependencies: [user_profile]
-  MessagingDomain(),        // Priority: 80,  Dependencies: [user_profile] 
-  NotificationDomain(),     // Priority: 70,  Dependencies: [messaging, post_feed]
-  ModerationDomain(),       // Priority: 75,  Dependencies: [post_feed]
-];
-```
-
-The system automatically calculates initialization order based on dependencies and validates consistency to prevent common errors.
-
----
-
-#### API & Networking
-
-```dart
-import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
-
-// Create instance (singleton pattern)
-final logger = LoggerServiceImpl();
-final appStateManager = AppStateManagerImpl.create(logger);
-
-// Initialize (call once during app startup)
+// Initialize and start using
+final appStateManager = AppStateManagerImpl.create(
+  LoggerServiceImpl(), 
+  config: config,
+);
 await appStateManager.initialize();
 ```
 
-#### Listening to State Changes
+### Core Services
 
+**App State Management**
 ```dart
-// Listen to app lifecycle changes
-appStateManager.stateStream.listen((state) {
-  print('Lifecycle: ${state.lifecycle.name}');
-  print('Online: ${state.isOnline}');
-  print('Foreground: ${state.isForeground}');
-  
-  if (state.isOnline && state.isForeground) {
-    // Sync data when app comes online
-    syncData();
-  }
-});
-
-// Listen to device info changes (orientation, size, etc.)
-appStateManager.deviceStream.listen((device) {
-  print('Device: ${device.type.name}');
-  print('OS: ${device.os.name}');
-  print('Screen: ${device.screenSize.width}x${device.screenSize.height}');
-  print('Breakpoint: ${device.breakpoint.name}');
-  print('Orientation: ${device.orientation.name}');
-  print('Has notch: ${device.hasNotch}');
-  
-  // Adapt UI based on device
-  if (device.isTablet) {
-    // Use tablet layout
-  } else if (device.breakpoint == ResponsiveBreakpoint.xl) {
-    // Use desktop layout
-  }
-});
-
-// Listen to navigation changes
-appStateManager.navigationStream.listen((nav) {
-  print('Current route: ${nav.currentRoute}');
-  print('Route params: ${nav.routeParams}');
-  print('History: ${nav.routeHistory}');
-});
-
-// Listen to theme changes
-appStateManager.themeStream.listen((theme) {
-  print('Theme mode: ${theme.name}');
-});
-
-// Listen to locale changes
-appStateManager.localeStream.listen((locale) {
-  print('Current locale: ${locale.currentLocale.languageCode}');
-  print('RTL: ${locale.isRTL}');
-  print('Text direction: ${locale.textDirection.name}');
-});
-
-// Listen to authentication changes
-appStateManager.authStream.listen((auth) {
-  print('Authenticated: ${auth.isAuthenticated}');
-  if (auth.isAuthenticated) {
-    print('User ID: ${auth.userId}');
-    print('Email: ${auth.userEmail}');
-  }
-});
-```
-
-#### Updating State
-
-```dart
-// Update theme mode
-await appStateManager.updateTheme(ThemeMode.dark);
-
-// Update locale
-await appStateManager.updateLocale(Locale('ar'));
-
-// Update navigation
-await appStateManager.updateNavigation('/products', params: {'id': '123'});
-
-// Update tab navigation
-await appStateManager.updateTab(1, '/inbox');
-
-// Pop navigation
-await appStateManager.popNavigation();
-
-// Set authentication state
-await appStateManager.setAuthenticated(
-  true,
-  userId: 'user123',
-  userEmail: 'user@example.com',
-);
-
-// Clear authentication
-await appStateManager.setUnauthenticated();
-```
-
-#### Accessing Current State
-
-```dart
-// Get current state
-final state = appStateManager.currentState;
-if (state.isOnline && state.isForeground) {
-  // App is active and connected
-}
-
-// Get device info
-final device = appStateManager.deviceInfo;
-if (device != null) {
-  if (device.isPhone) {
-    // Phone-specific logic
-  } else if (device.isTablet) {
-    // Tablet-specific logic
-  } else if (device.isDesktop) {
-    // Desktop-specific logic
-  }
-  
-  // Check breakpoint for responsive design
-  switch (device.breakpoint) {
-    case ResponsiveBreakpoint.xs:
-      // Extra small screens
-      break;
-    case ResponsiveBreakpoint.sm:
-      // Small screens
-      break;
-    case ResponsiveBreakpoint.md:
-      // Medium screens
-      break;
-    case ResponsiveBreakpoint.lg:
-      // Large screens
-      break;
-    case ResponsiveBreakpoint.xl:
-      // Extra large screens
-      break;
-  }
-}
-
-// Get navigation state
-final nav = appStateManager.navigationState;
-print('Current route: ${nav.currentRoute}');
-print('Tab index: ${nav.currentTabIndex}');
-
-// Get locale info
-final locale = appStateManager.localeInfo;
-if (locale.isRTL) {
-  // Apply RTL layout
-}
-
-// Get auth info
-final auth = appStateManager.authInfo;
-if (auth.isAuthenticated) {
-  print('User: ${auth.userEmail}');
-}
-
-// Get permissions info
-final permissions = appStateManager.permissionsInfo;
-if (permissions.isGranted(PermissionType.camera)) {
-  // Camera is allowed
-}
-if (permissions.isPermanentlyDenied(PermissionType.location)) {
-  // Location is permanently denied
-}
-```
-
-#### Permission Management
-
-The app state manager provides comprehensive permission tracking for 25+ common Android/iOS permissions:
-
-**Available Permission Types:**
-- Camera, Microphone
-- Location (including locationAlways, locationWhenInUse)
-- Calendar, Contacts
-- Photos, Videos, Storage, Documents, Downloads
-- Notifications, Phone, SMS
-- Sensors, Activity Recognition
-- Bluetooth, Schedule
-- App Tracking Transparency
-- Media Library, Reminders, Speech Recognition
-
-**Permission Status:**
-- `granted` - Permission is allowed
-- `denied` - Permission is denied
-- `restricted` - Permission is restricted by OS
-- `limited` - Permission is limited (iOS 14+)
-- `permanentlyDenied` - User denied and disabled "Ask Again"
-- `provisional` - Provisional permission granted
-
-**Usage:**
-
-```dart
-// Listen to permission changes
-appStateManager.permissionsStream.listen((permissions) {
-  if (permissions.isGranted(PermissionType.camera)) {
-    // Start camera feature
-  }
-  
-  if (permissions.isPermanentlyDenied(PermissionType.location)) {
-    // Show app settings prompt to user
-  }
-});
-
-// Update single permission
-appStateManager.updatePermission(
-  PermissionInfo.granted(PermissionType.microphone),
-);
-
-// Update multiple permissions
-appStateManager.updatePermissions([
-  PermissionInfo.granted(PermissionType.camera),
-  PermissionInfo.granted(PermissionType.location),
-  PermissionInfo.denied(PermissionType.contacts),
-]);
-
-// Query permissions
-final permissions = appStateManager.permissionsInfo;
-if (permissions.isGranted(PermissionType.location)) {
-  // Location is available
-}
-
-// Get all permissions by status
-final grantedPerms = permissions.getGrantedPermissions();
-final deniedPerms = permissions.getDeniedPermissions();
-final permaDeniedPerms = permissions.getPermanentlyDeniedPermissions();
-```
-
-#### Getting Full State Snapshot
-
-```dart
-
-#### Getting Full State Snapshot
-
-```dart
-// Get complete state snapshot (useful for debugging/analytics)
-final fullState = appStateManager.getFullState();
-print(fullState);
-// {
-//   'appState': {...},
-//   'deviceInfo': {...},
-//   'navigationState': {...},
-//   'authInfo': {...},
-//   'themeMode': 'dark',
-//   'localeInfo': {...},
-//   'timestamp': '2024-01-01T12:00:00.000Z'
-// }
-```
-
-#### State Models
-
-The app state manager uses several state models:
-
-- **AppStateInfo**: Combines lifecycle, focus, and connectivity state
-- **DeviceInfo**: Comprehensive device and screen information
-- **NavigationState**: Route history and tab navigation
-- **LocaleInfo**: Locale and text direction information
-- **AuthInfo**: Authentication status and user information
-
-All models support `copyWith()` for immutable updates and `toMap()` for serialization.
-
-#### Lifecycle States
-
-The app goes through these lifecycle states:
-
-- `appStart`: Application is starting
-- `appInit`: Application has initialized
-- `appForegroundOnline`: App is in foreground and online
-- `appForegroundOffline`: App is in foreground but offline
-- `appBackgroundOnline`: App is in background and online
-- `appBackgroundOffline`: App is in background and offline
-- `appKill`: Application is being terminated
-
-#### Responsive Breakpoints
-
-Device breakpoints are automatically calculated:
-
-- **xs**: < 576px (phones portrait)
-- **sm**: 576-768px (phones landscape, small tablets)
-- **md**: 768-992px (tablets portrait)
-- **lg**: 992-1200px (tablets landscape)
-- **xl**: ≥ 1200px (desktop, large tablets)
-
-#### Integration with State Management
-
-The app state manager works with any state management solution:
-
-```dart
-// With Riverpod
-final appStateProvider = StreamProvider<AppStateInfo>((ref) {
-  final manager = ref.watch(appStateManagerProvider);
-  return manager.stateStream;
-});
-
-// With Provider
-final appStateStream = StreamProvider<AppStateInfo>(
-  (ref) => appStateManager.stateStream,
-);
-
-// Direct usage in widgets
+// Reactive app state monitoring
 StreamBuilder<AppStateInfo>(
   stream: appStateManager.stateStream,
   builder: (context, snapshot) {
     final state = snapshot.data;
-    if (state?.isOffline == true) {
-      return OfflineBanner();
-    }
-    return YourWidget();
+    return state?.isOffline == true 
+      ? OfflineBanner() 
+      : YourMainWidget();
   },
 );
 ```
 
-### API Client
-
+**Storage & Networking**
 ```dart
+// Unified storage access (SQLite + Hive + SharedPreferences)
+await StorageGateway.instance.saveUser(user);
+final userData = await StorageGateway.instance.getUser(userId);
+
+// HTTP client with offline support
 final apiClient = ApiClientImpl(logger);
-
-// Configure
-apiClient.setBaseUrl('https://api.example.com');
-apiClient.setAuthToken('your-token');
-
-// Make requests
-final response = await apiClient.get('/users');
-final created = await apiClient.post('/users', data: {'name': 'John'});
+final response = await apiClient.get('/api/data');
 ```
 
-### Storage
-
-```dart
-// SharedPreferences
-final storage = SharedPreferencesStorage(logger);
-await storage.initialize();
-await storage.set('key', 'value');
-final value = await storage.get<String>('key');
-
-// SQLite
-final sqliteStorage = SqliteStorageImpl<User>(
-  logger,
-  'app.db',
-  'users',
-  (user) => user.toMap(),
-  (map) => User.fromMap(map),
-);
-await sqliteStorage.initialize('CREATE TABLE users (id TEXT PRIMARY KEY, name TEXT)');
-await sqliteStorage.create(user);
-
-// Hive
-final hiveStorage = HiveStorageImpl<User>(logger, 'users');
-await hiveStorage.initialize();
-await hiveStorage.create(user);
-```
-
-### Authentication
-
+**Authentication**
 ```dart
 final authService = AuthServiceImpl(logger, storage);
-
-// Sign in
-final userId = await authService.signIn('email@example.com', 'password');
-
-// Sign up
-final userId = await authService.signUp('email@example.com', 'password');
-
-// Check authentication
-final isAuth = await authService.isAuthenticated();
-
-// Sign out
-await authService.signOut();
+final result = await authService.signIn(email, password);
 ```
 
-### Role Management
+### Advanced Features
 
+**Runtime Control**
 ```dart
-final roleManager = RoleManagerImpl(logger, storage);
+// Custom runtime domains
+class MyFeatureDomain implements RuntimeDomain {
+  @override
+  String get domainId => 'my_feature';
+  // Implementation...
+}
 
-// Assign role
-await roleManager.assignRole('userId', 'admin');
-
-// Check role
-final hasRole = await roleManager.hasRole('userId', 'admin');
-final hasAny = await roleManager.hasAnyRole('userId', ['admin', 'moderator']);
+// Native app restart
+await AppControl.instance.restartApp();
 ```
 
-### File Operations
-
+**Smart Optimizations**
 ```dart
-final fileService = FileServiceImpl(logger);
+// Network-aware operations
+appStateManager.stateStream.where((s) => s.isOnline).listen((_) => syncData());
 
-// Save file
-await fileService.saveFile('/path/to/file.txt', bytes);
+// Battery-conscious background tasks
+appStateManager.batteryStream
+  .where((b) => !b.isLowBattery)
+  .listen((_) => enableBackgroundSync());
 
-// Read file
-final content = await fileService.readFileAsString('/path/to/file.txt');
-
-// Get directories
-final docsDir = await fileService.getAppDocumentsDirectory();
-final cacheDir = await fileService.getAppCacheDirectory();
+// Responsive UI adaptation
+final isLargeScreen = appStateManager.deviceInfo.breakpoint
+  .index >= ResponsiveBreakpoint.lg.index;
 ```
 
-### Share
+## 📚 Documentation
 
-```dart
-final shareService = ShareServiceImpl(logger);
+Comprehensive guides and API documentation:
 
-// Share text
-await shareService.shareText('Hello World');
+- **[📖 Package Documentation](docs/PACKAGE_DOCUMENTATION.md)** - Complete usage guide
+- **[📱 App State Management](docs/APP_STATE.md)** - 21+ state domains
+- **[🔄 Runtime Control](docs/RUNTIME_CONTROL.md)** - Dynamic app control
+- **[🌐 Networking](docs/NETWORKING.md)** - HTTP client & offline support
+- **[💾 Storage System](docs/STORAGE.md)** - Multi-layer storage gateway
+- **[🔐 Authentication](docs/AUTHENTICATION.md)** - Firebase Auth integration
+- **[📝 Logging](docs/LOGGING.md)** - Structured logging system
+- **[⚠️ Error Handling](docs/ERROR_HANDLING.md)** - Exception management
+- **[📁 File Operations](docs/FILE_HANDLING.md)** - File system utilities
+- **[🔔 FCM Messaging](docs/FCM.md)** - Push notifications
+- **[🚀 Prefetch System](docs/PREFETCH.md)** - Data preloading
+- **[🚀 Example App](example/)** - Working demo
 
-// Share file
-await shareService.shareFile('/path/to/file.pdf');
-```
+## ⚙️ Platform Support
 
-### Calendar
+| Platform | Status |
+|----------|--------|
+| Android  | ✅ Full support |
+| iOS      | ✅ Full support |
+| Web      | ✅ Core features |
+| macOS    | ✅ Core features |
+| Windows  | ✅ Core features |
+| Linux    | ✅ Core features |
 
-```dart
-final calendarService = CalendarServiceImpl(logger);
+## 🔄 Migration
 
-// Add event
-await calendarService.addEvent(
-  title: 'Meeting',
-  startDate: DateTime.now(),
-  endDate: DateTime.now().add(Duration(hours: 1)),
-);
+See [CHANGELOG.md](CHANGELOG.md) for version history and migration guides.
 
-// Get events
-final events = await calendarService.getEvents(
-  startDate: DateTime.now(),
-  endDate: DateTime.now().add(Duration(days: 7)),
-);
-```
+## 🤝 Contributing
 
-### Contacts
+Contributions are welcome! Please read the [contributing guidelines](CONTRIBUTING.md) first.
 
-```dart
-final contactsService = ContactsServiceImpl(logger);
+## 📜 License
 
-// Request permission
-final hasPermission = await contactsService.requestPermission();
+[MIT License](LICENSE) - see LICENSE file for details.
 
-// Get contacts
-final contacts = await contactsService.getContacts();
+## 📞 Support
 
-// Add contact
-await contactsService.addContact({
-  'givenName': 'John',
-  'familyName': 'Doe',
-  'emails': ['john@example.com'],
-  'phones': ['+1234567890'],
-});
-```
-
-## Architecture
-
-The package follows SOLID principles:
-
-- **Single Responsibility** - Each service has a single, well-defined responsibility
-- **Open/Closed** - Services are open for extension through interfaces
-- **Liskov Substitution** - Implementations can be substituted through interfaces
-- **Interface Segregation** - Focused interfaces for specific use cases
-- **Dependency Inversion** - Depend on abstractions, not concretions
-
-## Module Structure
-
-```
-lib/
-├── src/
-│   ├── core/
-│   │   ├── errors/
-│   │   └── interfaces/
-│   ├── app_state/
-│   ├── app_initialization/
-│   ├── networking/
-│   ├── logging/
-│   ├── storage/
-│   ├── auth/
-│   ├── role_management/
-│   ├── prefetch/
-│   ├── fcm/
-│   ├── file_operations/
-│   ├── share/
-│   ├── calendar/
-│   ├── contacts/
-│   └── update_manager/
-└── abdalsalam_logic_flutter.dart
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-See LICENSE file for details.
+- 🐛 [Report Issues](https://github.com/AbdAlmalik/abdalsalam_logic_flutter/issues)
+- 💬 [Discussions](https://github.com/AbdAlmalik/abdalsalam_logic_flutter/discussions)
+- 📧 Email: abed.alsalam.jodalah@gmail.com
