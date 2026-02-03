@@ -4,11 +4,11 @@ import 'dart:async';
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../src/runtime_control/domains/auth_runtime_domain.dart';
-import '../src/runtime_control/domains/storage_runtime_domain.dart';
-import '../src/runtime_control/domains/network_runtime_domain.dart';
-import '../src/runtime_control/domains/memory_runtime_domain.dart';
-import '../src/runtime_control/domains/service_registry_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/auth_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/storage_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/network_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/memory_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/service_registry_runtime_domain.dart';
 import 'visual_test_widget.dart';
 import 'test_counter_widget.dart';
 

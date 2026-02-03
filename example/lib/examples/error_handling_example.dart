@@ -1,15 +1,15 @@
 // lib/examples/error_handling_example.dart
 
 import 'dart:io';
-import '../src/core/errors/app_exception.dart';
-import '../src/core/errors/app_error_response.dart';
-import '../src/core/errors/exception_mapper.dart';
-import '../src/core/errors/network_exception.dart';
-import '../src/core/errors/auth_exception.dart';
-import '../src/core/errors/storage_exception.dart';
-import '../src/core/errors/validation_exception.dart';
-import '../src/core/errors/error_handler.dart';
-import '../src/core/errors/error_handler_impl.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/app_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/app_error_response.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/exception_mapper.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/network_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/auth_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/storage_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/validation_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/error_handler.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/error_handler_impl.dart';
 
 void demonstrateErrorHandling() {
   final errorHandler = ErrorHandlerImpl();

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../src/runtime_control/domain_registry.dart';
-import '../src/runtime_control/runtime_domain.dart';
-import '../src/runtime_control/runtime_config.dart';
-import '../src/runtime_control/reset_level.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domain_registry.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/runtime_config.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/reset_level.dart';
 
 /// Comprehensive example demonstrating complete user control over runtime domains
 /// This example shows how users can create their own domain architectures

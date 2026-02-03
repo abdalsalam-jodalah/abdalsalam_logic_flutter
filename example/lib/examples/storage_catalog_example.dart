@@ -1,10 +1,10 @@
 // lib/examples/storage_catalog_example.dart
 
 import 'package:sqflite/sqflite.dart';
-import '../src/storage/implementations/storage_catalog_mixin.dart';
-import '../src/storage/implementations/table_management_mixin.dart';
-import '../src/storage/abstractions/storage_interface.dart';
-import '../src/storage/types/storage_metadata.dart';
+import 'package:abdalsalam_logic_flutter/src/storage/implementations/storage_catalog_mixin.dart';
+import 'package:abdalsalam_logic_flutter/src/storage/implementations/table_management_mixin.dart';
+import 'package:abdalsalam_logic_flutter/src/storage/abstractions/storage_interface.dart';
+import 'package:abdalsalam_logic_flutter/src/storage/types/storage_metadata.dart';
 
 /// Example storage class with catalog tracking
 class CatalogedStorage extends Storage

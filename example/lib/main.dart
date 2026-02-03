@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
-import 'package:abdalsalam_logic_flutter/examples/app_state_detection_example.dart';
-import 'package:abdalsalam_logic_flutter/examples/runtime_control_comprehensive_ui.dart';
-import 'package:abdalsalam_logic_flutter/examples/runtime_control_interactive_demo.dart';
-import 'package:abdalsalam_logic_flutter/examples/networking_demo_integration.dart';
-import 'package:abdalsalam_logic_flutter/examples/domain_registration_example.dart' as domain_reg;
+import 'examples/app_state_detection_example.dart';
+import 'examples/runtime_control_comprehensive_ui.dart';
+import 'examples/runtime_control_interactive_demo.dart';
+import 'examples/networking_demo_integration.dart';
+import 'examples/domain_registration_example.dart' as domain_reg;
 import 'storage_designer.dart';
 import 'storage_inspector.dart';
 
@@ -38,7 +38,6 @@ void main() async {
   
   AppControl.initialize(config: const RuntimeConfig.development());
   AppControl.registerDomains([
-    domain_reg.LoggingDomain(),
     StorageDomain(),
     NetworkingDomain(),
     AuthDomain(),

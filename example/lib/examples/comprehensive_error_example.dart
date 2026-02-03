@@ -2,16 +2,16 @@
 
 import 'dart:io';
 import 'package:flutter/services.dart';
-import '../src/core/errors/app_exception.dart';
-import '../src/core/errors/app_error_response.dart';
-import '../src/core/errors/exception_mapper.dart';
-import '../src/core/errors/network_exception.dart';
-import '../src/core/errors/auth_exception.dart';
-import '../src/core/errors/storage_exception.dart';
-import '../src/core/errors/validation_exception.dart';
-import '../src/core/errors/backend_exception.dart';
-import '../src/core/errors/unknown_app_exception.dart';
-import '../src/core/errors/error_handler_impl.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/app_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/app_error_response.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/exception_mapper.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/network_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/auth_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/storage_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/validation_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/backend_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/unknown_app_exception.dart';
+import 'package:abdalsalam_logic_flutter/src/core/errors/error_handler_impl.dart';
 
 class ComprehensiveErrorExample {
   final _errorHandler = ErrorHandlerImpl();

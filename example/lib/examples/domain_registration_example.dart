@@ -2,12 +2,12 @@
 // Example showing proper domain registration with enforcement
 
 import 'package:flutter/material.dart';
-import '../src/runtime_control/app_control.dart';
-import '../src/runtime_control/runtime_config.dart';
-import '../src/runtime_control/runtime_domain.dart';
-import '../src/runtime_control/reset_level.dart';
-import '../src/runtime_control/domains/storage_runtime_domain.dart';
-import '../src/runtime_control/domains/auth_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/app_control.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/runtime_config.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/reset_level.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/storage_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/auth_runtime_domain.dart';
 
 class DomainRegistrationExample extends StatefulWidget {
   const DomainRegistrationExample({super.key});

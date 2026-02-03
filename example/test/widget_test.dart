@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
-import 'package:abdalsalam_logic_flutter/examples/app_state_detection_example.dart';
+import '../lib/examples/app_state_detection_example.dart';
 
 import 'package:abdalsalam_logic_flutter_example/main.dart';
 

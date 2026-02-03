@@ -1,7 +1,7 @@
 // lib/examples/file_handling_example.dart
 
 import 'dart:io';
-import '../abdalsalam_logic_flutter.dart';
+import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 
 void main() async {
   await demonstrateFileHandling();

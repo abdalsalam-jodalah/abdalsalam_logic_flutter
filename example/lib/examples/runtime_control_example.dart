@@ -3,11 +3,11 @@
 import 'package:abdalsalam_logic_flutter/abdalsalam_logic_flutter.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
-import '../src/runtime_control/domains/auth_runtime_domain.dart';
-import '../src/runtime_control/domains/storage_runtime_domain.dart';
-import '../src/runtime_control/domains/network_runtime_domain.dart';
-import '../src/runtime_control/domains/memory_runtime_domain.dart';
-import '../src/runtime_control/domains/service_registry_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/auth_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/storage_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/network_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/memory_runtime_domain.dart';
+import 'package:abdalsalam_logic_flutter/src/runtime_control/domains/service_registry_runtime_domain.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
