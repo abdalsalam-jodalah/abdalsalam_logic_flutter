@@ -295,7 +295,7 @@ class FileDownloader {
           );
         }
         return FileDownloadException(
-          message: 'Server error (${statusCode}) for URL: $url',
+          message: 'Server error ($statusCode) for URL: $url',
           code: 'DOWNLOAD_SERVER_ERROR',
           originalException: dioError,
         );

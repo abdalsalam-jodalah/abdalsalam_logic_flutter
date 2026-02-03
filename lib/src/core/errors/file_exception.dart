@@ -41,7 +41,7 @@ abstract class FileException implements AppException {
   }
 
   @override
-  String toString() => '${runtimeType}: $message (code: $code)';
+  String toString() => '$runtimeType: $message (code: $code)';
 }
 
 class FileDownloadException extends FileException {
