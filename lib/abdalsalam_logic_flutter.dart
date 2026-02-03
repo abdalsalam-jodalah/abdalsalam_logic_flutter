@@ -7,7 +7,7 @@ export 'src/core/errors/auth_exception.dart';
 export 'src/core/errors/storage_exception.dart';
 export 'src/core/errors/validation_exception.dart';
 export 'src/core/errors/backend_exception.dart';
-export 'src/core/errors/unknown_app_exception.dart';
+export 'src/core/errors/file_exception.dart';
 export 'src/core/errors/error_handler.dart';
 export 'src/core/errors/error_handler_impl.dart';
 export 'src/core/interfaces/repository_interface.dart';
@@ -105,6 +105,9 @@ export 'src/fcm/fcm_service_impl.dart';
 
 export 'src/file_operations/file_service.dart';
 export 'src/file_operations/file_service_impl.dart';
+export 'src/file_operations/file_metadata.dart';
+export 'src/file_operations/file_downloader.dart';
+export 'src/file_operations/file_opener.dart';
 
 export 'src/share/share_service.dart';
 export 'src/share/share_service_impl.dart';

@@ -1,20 +1,38 @@
 // lib/src/file_operations/file_service.dart
+
 import '../core/interfaces/service_interface.dart';
-import 'dart:io';
+import 'file_metadata.dart';
+import 'file_downloader.dart';
 
 abstract class FileService extends ServiceInterface {
-  Future<File> saveFile(String path, List<int> bytes);
-  Future<File> saveFileFromString(String path, String content);
-  Future<String> readFileAsString(String path);
-  Future<List<int>> readFileAsBytes(String path);
-  Future<bool> fileExists(String path);
-  Future<void> deleteFile(String path);
-  Future<List<FileSystemEntity>> listFiles(String directory);
-  Future<Directory> createDirectory(String path);
-  Future<void> deleteDirectory(String path);
-  Future<String> getAppDocumentsDirectory();
-  Future<String> getAppCacheDirectory();
-  Future<String> getAppTempDirectory();
+  Future<FileMetadata> downloadFile({
+    required String url,
+    String? subfolder,
+    String? customFileName,
+    void Function(FileDownloadProgress)? onProgress,
+  });
+  
+  Future<bool> openFile(String filePath);
+  
+  Future<void> deleteFile(String filePath);
+  
+  Future<bool> fileExists(String filePath);
+  
+  Future<FileMetadata?> getFileInfo(String filePath);
+  
+  Future<List<FileMetadata>> listFiles({String? subfolder});
+  
+  Future<void> clearFiles({String? subfolder});
+  
+  Future<String> getDownloadsPath();
+  
+  Future<List<String>> getSubfolders();
+  
+  Future<int> getTotalStorageUsage({String? subfolder});
+  
+  bool cancelDownload(String url);
+  
+  List<String> getActiveDownloads();
 }
 
 

@@ -4,9 +4,12 @@ import 'app_exception.dart';
 import 'app_error_response.dart';
 import 'error_handler.dart';
 import 'exception_mapper.dart';
+import '../../logging/logger.dart';
 
 class ErrorHandlerImpl implements ErrorHandler {
-  ErrorHandlerImpl();
+  final Logger? _logger;
+
+  ErrorHandlerImpl({Logger? logger}) : _logger = logger;
 
   @override
   void handleError(dynamic error, {StackTrace? stackTrace}) {
@@ -26,8 +29,14 @@ class ErrorHandlerImpl implements ErrorHandler {
 
   @override
   void logError(AppException exception) {
-    // TODO: Integrate with logging service when available
-    // For now, consumers can override this method for custom logging
+    try {
+      _logger?.error(
+        () => 'App error occurred: ${exception.message}',
+        exception.originalException,
+        exception.stackTrace,
+      );
+    } catch (e) {
+    }
   }
 }
 
